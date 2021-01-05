@@ -1,0 +1,28 @@
+[package]
+name = "gluon-actor"
+version = "0.1.0"
+authors = ["Yan Mingzhi <realraindust@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+log = "0.4.8"
+wascc-actor = "0.7.1"
+serde = {version = "1.0.106", features = ["derive"]}
+serde_derive = "1.0.106"
+rmp-serde = "0.14.3"
+tea-actor-utility = { path="../tea-actor-utility" }
+prost = "0.6.1"
+tea-codec = {path="../tea-codec"}
+serde_json = "1.0.55"
+base64 = "0.12.2"
+anyhow = "1.0.34"
+[build-dependencies]
+prost-build = "0.6"
+
+[features]
+default = []
+
+dev = []
