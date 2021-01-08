@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build --target wasm32-unknown-unknown
-	wascap sign $(DEBUG)/gluon_actor.wasm $(DEBUG)/gluon_actor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -l -g -z -c tea:keyvalue -c tea:layer1 -c tea:env -c tea:ipfs -c tea:tpm -n "TEA project: Delegate Actor"
+	wascap sign $(DEBUG)/gluon_actor.wasm $(DEBUG)/gluon_actor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -l -g -z -c tea:keyvalue -c tea:layer1 -c tea:env -c tea:ipfs -c tea:tpm -c tea:crypto -c tea:intercom -n "TEA project: Delegate Actor"
 
 check:
 	@$(CARGO) check
@@ -47,11 +47,11 @@ update:
 
 dev:
 	@$(CARGO) build --release --target wasm32-unknown-unknown --features "dev"
-	wascap sign $(RELEASE)/gluon_actor.wasm $(RELEASE)/gluon_actor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -l -g -z -c tea:keyvalue -c tea:layer1 -c tea:env -c tea:ipfs -c tea:tpm -n "TEA project: Delegate Actor"
+	wascap sign $(RELEASE)/gluon_actor.wasm $(RELEASE)/gluon_actor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -l -g -z -c tea:keyvalue -c tea:layer1 -c tea:env -c tea:ipfs -c tea:tpm -c tea:crypto -c tea:intercom -n "TEA project: Delegate Actor"
 
 release:
 	@$(CARGO) build --release --target wasm32-unknown-unknown
-	wascap sign $(RELEASE)/gluon_actor.wasm $(RELEASE)/gluon_actor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -l -g -z -c tea:keyvalue -c tea:layer1 -c tea:env -c tea:ipfs -c tea:tpm -n "TEA project: Delegate Actor"
+	wascap sign $(RELEASE)/gluon_actor.wasm $(RELEASE)/gluon_actor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -l -g -z -c tea:keyvalue -c tea:layer1 -c tea:env -c tea:ipfs -c tea:tpm -c tea:crypto -c tea:intercom -n "TEA project: Delegate Actor"
 	
 keys: keys-account
 keys: keys-module

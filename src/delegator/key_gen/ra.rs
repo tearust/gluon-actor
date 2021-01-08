@@ -13,6 +13,7 @@ pub fn remote_attestation_executor(
     peer_id: String,
     reply_to: String,
 ) -> anyhow::Result<()> {
+    debug!("remote_attestation_executor with request: {:?}", &request);
     let mut properties: HashMap<String, String> = HashMap::new();
     properties.insert(PROPERTY_TASK_ID.into(), request.task_id.clone());
     properties.insert(
@@ -32,6 +33,7 @@ pub fn remote_attestation_initial_pinner(
     peer_id: String,
     reply_to: String,
 ) -> anyhow::Result<()> {
+    debug!("remote_attestation_executor with request: {:?}", &request);
     let mut properties: HashMap<String, String> = HashMap::new();
     properties.insert(PROPERTY_TASK_ID.into(), request.task_id.clone());
     properties.insert(

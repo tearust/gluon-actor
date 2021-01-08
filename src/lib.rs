@@ -100,7 +100,7 @@ fn pinner_client_operation_after_verify(msg: &BrokerMessage) -> HandlerResult<()
 }
 
 fn listen_p2p_message(from_peer_id: &str, msg: &BrokerMessage) -> HandlerResult<()> {
-    trace!("pinner actor got p2p message from {}", from_peer_id);
+    trace!("gluon actor got p2p message from {}", from_peer_id);
     Ok(ipfs_p2p::listen_message(
         &from_peer_id.clone(),
         &msg,
