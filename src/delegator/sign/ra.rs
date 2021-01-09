@@ -1,6 +1,7 @@
 use crate::common::utils::send_ra_request;
 use crate::delegator::sign::observers::tag_for_sign;
 use std::collections::HashMap;
+use tea_actor_utility::actor_nats::response_reply_with_subject;
 
 pub const PROPERTY_TASK_ID: &'static str = "task_id";
 pub const PROPERTY_RSA_PUB_KEY: &'static str = "rsa_pub_key";
@@ -24,7 +25,12 @@ pub fn remote_attestation_executor(
         VALUE_RA_TARGET_EXECUTOR.into(),
     );
     tag_for_sign(&mut properties);
-    send_ra_request(peer_id, reply_to, properties, "executor ra sent".into())
+    response_reply_with_subject(
+        "",
+        &reply_to,
+        "sign to ra executor sent".as_bytes().to_vec(),
+    )?;
+    send_ra_request(peer_id, reply_to, properties)
 }
 
 pub fn generate_pinner_ra_properties(task_id: &str) -> HashMap<String, String> {

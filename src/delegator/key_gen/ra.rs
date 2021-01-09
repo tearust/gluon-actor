@@ -1,6 +1,7 @@
 use crate::common::utils::send_ra_request;
 use crate::delegator::key_gen::observers::tag_for_key_gen;
 use std::collections::HashMap;
+use tea_actor_utility::actor_nats::response_reply_with_subject;
 
 pub const PROPERTY_TASK_ID: &'static str = "task_id";
 pub const PROPERTY_RSA_PUB_KEY: &'static str = "rsa_pub_key";
@@ -25,7 +26,12 @@ pub fn remote_attestation_executor(
         VALUE_RA_TARGET_EXECUTOR.into(),
     );
     tag_for_key_gen(&mut properties);
-    send_ra_request(peer_id, reply_to, properties, "executor ra sent".into())
+    response_reply_with_subject(
+        "",
+        &reply_to,
+        "key generation to ra executor sent".as_bytes().to_vec(),
+    )?;
+    send_ra_request(peer_id, reply_to, properties)
 }
 
 pub fn remote_attestation_initial_pinner(
@@ -33,7 +39,10 @@ pub fn remote_attestation_initial_pinner(
     peer_id: String,
     reply_to: String,
 ) -> anyhow::Result<()> {
-    debug!("remote_attestation_executor with request: {:?}", &request);
+    debug!(
+        "remote_attestation_initial_pinner with request: {:?}",
+        &request
+    );
     let mut properties: HashMap<String, String> = HashMap::new();
     properties.insert(PROPERTY_TASK_ID.into(), request.task_id.clone());
     properties.insert(
@@ -45,12 +54,14 @@ pub fn remote_attestation_initial_pinner(
         VALUE_RA_TARGET_INITIAL_PINNER.into(),
     );
     tag_for_key_gen(&mut properties);
-    send_ra_request(
-        peer_id,
-        reply_to,
-        properties,
-        "initial pinner ra sent".into(),
-    )
+    response_reply_with_subject(
+        "",
+        &reply_to,
+        "key generation to ra initial pinner sent"
+            .as_bytes()
+            .to_vec(),
+    )?;
+    send_ra_request(peer_id, reply_to, properties)
 }
 
 pub fn is_executor_ra_response(item: &crate::actor_pinner_proto::ChallangeStoreItem) -> bool {

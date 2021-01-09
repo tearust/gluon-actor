@@ -25,6 +25,7 @@ extern crate log;
 extern crate serde_derive;
 
 const BINDING_NAME: &'static str = "tea_task";
+const PINNER_ACTOR_NAME: &'static str = "pinner";
 
 actor_handlers! {
     codec::messaging::OP_DELIVER_MESSAGE => handle_message,
