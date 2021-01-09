@@ -30,7 +30,7 @@ pub fn remote_attestation_executor(
         &reply_to,
         "sign to ra executor sent".as_bytes().to_vec(),
     )?;
-    send_ra_request(peer_id, reply_to, properties)
+    send_ra_request(peer_id, properties)
 }
 
 pub fn generate_pinner_ra_properties(task_id: &str) -> HashMap<String, String> {

@@ -31,7 +31,7 @@ pub fn remote_attestation_executor(
         &reply_to,
         "key generation to ra executor sent".as_bytes().to_vec(),
     )?;
-    send_ra_request(peer_id, reply_to, properties)
+    send_ra_request(peer_id, properties)
 }
 
 pub fn remote_attestation_initial_pinner(
@@ -61,7 +61,7 @@ pub fn remote_attestation_initial_pinner(
             .as_bytes()
             .to_vec(),
     )?;
-    send_ra_request(peer_id, reply_to, properties)
+    send_ra_request(peer_id, properties)
 }
 
 pub fn is_executor_ra_response(item: &crate::actor_pinner_proto::ChallangeStoreItem) -> bool {
