@@ -24,7 +24,8 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
-const BINDING_NAME: &'static str = "tea_task";
+const BINDING_NAME: &'static str = "tea_gluon";
+const MY_ACTOR_NAME: &'static str = "gluon";
 const PINNER_ACTOR_NAME: &'static str = "pinner";
 
 actor_handlers! {
@@ -48,6 +49,7 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
             sign_with_key_slices_handler(&msg)
         }
         ["actor", "task", "inbox", uuid] => action::result_handler(&msg, uuid),
+        ["reply", _actor, uuid] => action::result_handler(&msg, uuid),
         _ => Ok(()),
     }
 }
