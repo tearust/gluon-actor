@@ -10,8 +10,8 @@ pub fn task_sign_with_key_slices_request_handler(
 ) -> anyhow::Result<()> {
     let deployment_id = req.deployment_id.clone();
     get_deployment_info(
+        crate::MY_ACTOR_NAME,
         &deployment_id.clone(),
-        "actor.task.inbox",
         move |data_cid, _, key1| {
             let key1 = key1.ok_or(anyhow::anyhow!("failed to get key1 of {}", &deployment_id))?;
             let data_cid =

@@ -94,27 +94,35 @@ where
             let pk_str = String::from_utf8(msg.body.clone())?;
             let rsa_pub_key = ras_keys_to_bytes(pk_str)?;
             let subject = format!(
-                "actor.pinner.inbox.data_upload_completed_process.{}",
+                "actor.pinner.intercom.data_upload_completed_process.{}",
                 &session_id
             );
             let to_value = |value: String| Some(crate::actor_pinner_proto::StringValue { value });
             let mut callback = callback.clone();
-            action::call(
-                &subject,
-                "actor.task.inbox",
-                encode_protobuf(
-                    crate::actor_pinner_proto::DataUploadCompletedProcessRequest {
-                        cid_code: to_value(data_cid),
-                        cid_description: to_value("".into()), // todo add description about key slice
-                        cid_capchecker: to_value("".into()),
-                        key_url_encoded: to_value(base64::encode(rsa_encrypt(rsa_pub_key, key1)?)),
-                    },
-                )?,
+            action::call_async_intercom(
+                crate::PINNER_ACTOR_NAME,
+                crate::MY_ACTOR_NAME,
+                BrokerMessage {
+                    subject,
+                    reply_to: "".into(),
+                    body: encode_protobuf(
+                        crate::actor_pinner_proto::DataUploadCompletedProcessRequest {
+                            cid_code: to_value(data_cid),
+                            cid_description: to_value("".into()), // todo add description about key slice
+                            cid_capchecker: to_value("".into()),
+                            key_url_encoded: to_value(base64::encode(rsa_encrypt(
+                                rsa_pub_key,
+                                key1,
+                            )?)),
+                        },
+                    )?,
+                },
                 move |msg| {
                     debug!("data_upload_completed_process got response: {:?}", msg);
                     callback(String::from_utf8(msg.body.clone())?)
                 },
-            )
+            )?;
+            Ok(())
         },
     )
     .map_err(|e| anyhow::anyhow!("{}", e))?)
