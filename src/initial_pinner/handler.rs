@@ -13,6 +13,7 @@ use tea_actor_utility::{
     ipfs_p2p::{log_and_response_with_error, send_message},
     layer1::lookup_node_profile_by_tea_id,
 };
+use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
 
 pub fn task_pinner_key_slice_request_handler(
@@ -72,9 +73,19 @@ where
     let session_id = wascc_actor::extras::default()
         .get_guid()
         .map_err(|e| anyhow::anyhow!("{}", e))?;
-    let subject = format!("actor.pinner.inbox.register_upload_rsa_key.{}", &session_id);
-    Ok(
-        action::call(&subject, "actor.task.inbox", Vec::new(), move |msg| {
+    let subject = format!(
+        "actor.pinner.intercom.register_upload_rsa_key.{}",
+        &session_id
+    );
+    Ok(action::call_async_intercom(
+        crate::PINNER_ACTOR_NAME,
+        crate::MY_ACTOR_NAME,
+        BrokerMessage {
+            subject,
+            reply_to: "".into(),
+            body: Vec::new(),
+        },
+        move |msg| {
             let key_slice = decrypt_key_slice(&req.task_id, req.encrypted_key_slice.clone())?;
             let key1 = generate_aes_key()?;
             let encrypted_data = aes_encrypt(key1.clone(), key_slice)?;
@@ -104,9 +115,9 @@ where
                     callback(String::from_utf8(msg.body.clone())?)
                 },
             )
-        })
-        .map_err(|e| anyhow::anyhow!("{}", e))?,
+        },
     )
+    .map_err(|e| anyhow::anyhow!("{}", e))?)
 }
 
 pub fn process_key_generation_event(
