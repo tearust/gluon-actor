@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use tea_actor_utility::{action::post_intercom, encode_protobuf};
+use tea_actor_utility::{action, encode_protobuf};
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 
 pub fn from_hash_map(
@@ -13,17 +13,20 @@ pub fn from_hash_map(
 }
 
 pub fn send_ra_request(peer_id: String, properties: HashMap<String, String>) -> anyhow::Result<()> {
-    post_intercom(
+    action::call_async_intercom(
         crate::PINNER_ACTOR_NAME,
-        &BrokerMessage {
+        crate::MY_ACTOR_NAME,
+        BrokerMessage {
             subject: "actor.pinner.intercom.request_peer_approve_ra".into(),
-            reply_to: "actor.task.inbox".into(),
+            reply_to: "".into(),
             body: encode_protobuf(crate::actor_pinner_proto::PeerApproveRaRequest {
                 peer_id,
                 properties: from_hash_map(properties),
             })?,
         },
+        move |msg| {
+            debug!("send_ra_request got response msg: {:?}", msg);
+            Ok(())
+        },
     )
-    .map_err(|e| anyhow::anyhow!("{}", e))?;
-    Ok(())
 }

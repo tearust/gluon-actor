@@ -13,6 +13,7 @@ pub use observers::{is_sign_tag, operation_after_verify_handler};
 use std::collections::HashMap;
 use tea_actor_utility::ipfs_p2p::{response_ipfs_p2p, send_message, P2pReplyType};
 use tea_actor_utility::{action, encode_protobuf};
+use wascc_actor::prelude::codec::messaging::BrokerMessage;
 
 pub fn process_sign_with_key_slices_event(
     req: crate::actor_delegate_proto::SignWithKeySlicesRequest,
@@ -46,17 +47,21 @@ fn begin_find_pinners(
     deployment_id: String,
     properties: HashMap<String, String>,
 ) -> anyhow::Result<()> {
-    Ok(action::call(
-        "actor.pinner.inbox.find_pinners",
-        "actor.task.inbox",
-        encode_protobuf(crate::actor_pinner_proto::FindPinnersRequest {
-            deployment_id,
-            properties: from_hash_map(properties),
-            delay_seconds: 0,
-            finding_mode: tea_codec::serialize(
-                tea_codec::ipfs_codec::FindingMode::AsMuchAsPossible,
-            )?,
-        })?,
+    Ok(action::call_async_intercom(
+        crate::PINNER_ACTOR_NAME,
+        crate::MY_ACTOR_NAME,
+        BrokerMessage {
+            subject: "actor.pinner.intercom.find_pinners".into(),
+            reply_to: "".into(),
+            body: encode_protobuf(crate::actor_pinner_proto::FindPinnersRequest {
+                deployment_id,
+                properties: from_hash_map(properties),
+                delay_seconds: 0,
+                finding_mode: tea_codec::serialize(
+                    tea_codec::ipfs_codec::FindingMode::AsMuchAsPossible,
+                )?,
+            })?,
+        },
         move |msg| {
             debug!("begin_find_pinners got response: {:?}", msg);
             Ok(())
