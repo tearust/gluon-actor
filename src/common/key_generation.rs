@@ -3,7 +3,7 @@ use crate::BINDING_NAME;
 use anyhow::anyhow;
 use tea_actor_utility::{
     actor_kvp,
-    actor_util::{generate_rsa_keypair, ras_keys_to_bytes, rsa_decrypt},
+    actor_util::{generate_rsa_keypair, rsa_decrypt, rsa_key_to_bytes},
     ipfs_p2p::send_message,
 };
 
@@ -24,7 +24,7 @@ pub fn send_key_generation_request(
 
     let req = crate::p2p_proto::TaskKeyGenerationApplyRequst {
         task_id: task_info.task_id.clone(),
-        rsa_pub_key: ras_keys_to_bytes(rsa_key_pkcs1.public_key)?,
+        rsa_pub_key: rsa_key_to_bytes(rsa_key_pkcs1.public_key)?,
         cap_desc: None,
         apply_executor,
     };
@@ -47,7 +47,7 @@ pub fn decrypt_key_slice(task_id: &str, key_slice_encrypted: Vec<u8>) -> anyhow:
             task_id
         ))?;
 
-    let key_slice = rsa_decrypt(ras_keys_to_bytes(rsa_priv_key)?, key_slice_encrypted)?;
+    let key_slice = rsa_decrypt(rsa_key_to_bytes(rsa_priv_key)?, key_slice_encrypted)?;
     Ok(key_slice)
 }
 

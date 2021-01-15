@@ -6,7 +6,7 @@ use tea_actor_utility::{
     actor_crypto::combine_to_witness,
     actor_kvp,
     actor_nats::response_reply_with_subject,
-    actor_util::{generate_rsa_keypair, ras_keys_to_bytes, rsa_decrypt},
+    actor_util::{generate_rsa_keypair, rsa_decrypt, rsa_key_to_bytes},
     ipfs_p2p::send_message,
     layer1::lookup_node_profile_by_tea_id,
 };
@@ -121,7 +121,7 @@ fn send_sign_request(peer_id: &str, task_id: &str) -> anyhow::Result<()> {
 
     let req = crate::p2p_proto::TaskSignWithKeySlicesRequst {
         task_id: task_id.to_string(),
-        rsa_pub_key: ras_keys_to_bytes(rsa_key_pkcs1.public_key)?,
+        rsa_pub_key: rsa_key_to_bytes(rsa_key_pkcs1.public_key)?,
         cap_desc: None,
     };
 
@@ -147,6 +147,6 @@ fn decrypt_key_slice(task_id: &str, key_slice_encrypted: Vec<u8>) -> anyhow::Res
             task_id
         ))?;
 
-    let key_slice = rsa_decrypt(ras_keys_to_bytes(rsa_priv_key)?, key_slice_encrypted)?;
+    let key_slice = rsa_decrypt(rsa_key_to_bytes(rsa_priv_key)?, key_slice_encrypted)?;
     Ok(key_slice)
 }

@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use serde::export::TryFrom;
 use tea_actor_utility::actor_crypto::{aes_encrypt, generate_aes_key};
 use tea_actor_utility::actor_ipfs::ipfs_block_put;
-use tea_actor_utility::actor_util::{ras_keys_to_bytes, rsa_encrypt};
+use tea_actor_utility::actor_util::{rsa_encrypt, rsa_key_to_bytes};
 use tea_actor_utility::{
     action,
     actor_nats::response_reply_with_subject,
@@ -92,7 +92,7 @@ where
             let (data_cid, _) = ipfs_block_put(&encrypted_data, true)?;
 
             let pk_str = String::from_utf8(msg.body.clone())?;
-            let rsa_pub_key = ras_keys_to_bytes(pk_str)?;
+            let rsa_pub_key = rsa_key_to_bytes(pk_str)?;
             let subject = format!(
                 "actor.pinner.intercom.data_upload_completed_process.{}",
                 &session_id
