@@ -1,6 +1,6 @@
+use crate::delegator::process_key_generation_event;
 use prost::Message;
-use tea_actor_utility::actor_env::get_my_tea_id;
-use tea_actor_utility::actor_pinner::is_node_ready;
+use tea_actor_utility::{actor_env::get_my_tea_id, actor_pinner::is_node_ready};
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
 
@@ -18,19 +18,7 @@ pub fn key_generation_request_handler(msg: &BrokerMessage) -> HandlerResult<()> 
             "KeyGeneratioResponse protobuf decoded {:?}",
             &key_generation_response
         );
-
-        let tea_id = get_my_tea_id()?;
-        if tea_id.eq(&key_generation_response.data_adhoc.delegator_tea_id) {
-            crate::delegator::process_key_generation_event(key_generation_response)?;
-            return Ok(());
-        }
-
-        if !crate::executor::process_key_generation_event(key_generation_response.clone())? {
-            if !crate::initial_pinner::process_key_generation_event(key_generation_response)? {
-                debug!("task not meeting my strategy, just ignore");
-            }
-        }
-
+        process_key_generation_event(key_generation_response)?;
         Ok(())
     })?)
 }

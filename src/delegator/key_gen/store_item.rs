@@ -13,6 +13,7 @@ const PREFIX_DELEGATOR_TASK_KEY_GEN_STORE_ITEM: &'static str = "delegator_task_k
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub enum StoreItemState {
     Init,
+    InvitedCandidates,
     RaBegun,
     RaCompleted,
     SentToExecutor,
@@ -26,6 +27,7 @@ pub enum StoreItemState {
 pub struct DelegatorKeyGenStoreItem {
     pub task_info: TaskInfo,
     pub state: StoreItemState,
+    pub nonce: Vec<u8>,
     pub executor: Option<ExecutorInfo>,
     pub initial_pinners: Vec<InitialPinnerInfo>,
     pub p1_public_key: Vec<u8>,
@@ -72,6 +74,7 @@ impl TryFrom<crate::actor_delegate_proto::KeyGenerationResponse> for DelegatorKe
         Ok(DelegatorKeyGenStoreItem {
             task_info: TaskInfo::try_from(value)?,
             state: StoreItemState::Init,
+            nonce: Vec::new(),
             executor: None,
             p1_public_key,
             p2_public_key: None,

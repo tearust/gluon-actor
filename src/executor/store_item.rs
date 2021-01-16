@@ -40,11 +40,11 @@ impl ExecutorStoreItem {
     }
 }
 
-impl TryFrom<crate::actor_delegate_proto::KeyGenerationResponse> for ExecutorStoreItem {
+impl TryFrom<crate::p2p_proto::KeyGenerationCandidateRequest> for ExecutorStoreItem {
     type Error = TeaError;
 
     fn try_from(
-        value: crate::actor_delegate_proto::KeyGenerationResponse,
+        value: crate::p2p_proto::KeyGenerationCandidateRequest,
     ) -> Result<Self, Self::Error> {
         Ok(ExecutorStoreItem {
             task_info: TaskInfo::try_from(value)?,

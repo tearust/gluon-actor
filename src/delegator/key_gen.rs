@@ -7,6 +7,7 @@ use tea_actor_utility::{
     ipfs_p2p::{log_and_response, log_and_response_with_error, send_message, P2pReplyType},
 };
 
+mod candidates;
 mod initial_pinner_info;
 mod observers;
 mod ra;
@@ -30,9 +31,21 @@ pub trait ExecutorRequestConstructor {
 pub fn process_key_generation_event(
     res: crate::actor_delegate_proto::KeyGenerationResponse,
 ) -> anyhow::Result<()> {
-    let store_item = DelegatorKeyGenStoreItem::try_from(res)?;
-    DelegatorKeyGenStoreItem::save(&store_item)?;
-    Ok(())
+    super::verifier::try_to_be_delegator(
+        res.data_adhoc.delegator_tea_nonce_rsa_encryption.clone(),
+        res.data_adhoc.delegator_tea_nonce_hash.clone(),
+        move |nonce| {
+            let mut store_item = DelegatorKeyGenStoreItem::try_from(res.clone())?;
+            store_item.nonce = nonce;
+            DelegatorKeyGenStoreItem::save(&store_item)?;
+
+            candidates::invite_candidate_executors(&store_item)?;
+            candidates::invite_candidate_initial_pinners(&store_item)?;
+            store_item.state = StoreItemState::InvitedCandidates;
+            DelegatorKeyGenStoreItem::save(&store_item)?;
+            Ok(())
+        },
+    )
 }
 
 fn try_send_to_executor(item: &mut DelegatorKeyGenStoreItem) -> anyhow::Result<()> {

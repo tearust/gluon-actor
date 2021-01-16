@@ -87,7 +87,7 @@ pub fn process_sign_with_key_slices_event(
     ExecutorStoreItem::save(&store_item)?;
 
     let task_info = store_item.task_info.clone();
-    lookup_node_profile_by_tea_id(&delegator_tea_id, "actor.delegate.inbox", move |profile| {
+    lookup_node_profile_by_tea_id(&delegator_tea_id, "actor.gluon.inbox", move |profile| {
         send_sign_request(&profile.peer_id, &task_info.task_id)?;
         Ok(())
     })

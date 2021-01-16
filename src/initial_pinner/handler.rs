@@ -1,7 +1,8 @@
 use super::store_item::InitialPinnerStoreItem;
-use crate::common::{decrypt_key_slice, send_key_generation_request};
+use crate::common::{
+    decrypt_key_slice, send_key_generation_request, verify_to_candidate_signature,
+};
 use crate::initial_pinner::store_item::StoreItemState;
-use anyhow::anyhow;
 use serde::export::TryFrom;
 use tea_actor_utility::actor_crypto::{aes_encrypt, generate_aes_key};
 use tea_actor_utility::actor_ipfs::ipfs_block_put;
@@ -11,7 +12,6 @@ use tea_actor_utility::{
     actor_nats::response_reply_with_subject,
     encode_protobuf,
     ipfs_p2p::{log_and_response_with_error, send_message},
-    layer1::lookup_node_profile_by_tea_id,
 };
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
@@ -128,38 +128,34 @@ where
     .map_err(|e| anyhow::anyhow!("{}", e))?)
 }
 
-pub fn process_key_generation_event(
-    res: crate::actor_delegate_proto::KeyGenerationResponse,
-) -> anyhow::Result<bool> {
-    let delegator_tea_id = res.data_adhoc.delegator_tea_id.clone();
-    let mut store_item = InitialPinnerStoreItem::try_from(res)?;
-    if !willing_to_run(&store_item) {
-        info!(
-            "I'm not willing to run {}, just ignore",
-            &store_item.task_info.task_id
-        );
-        return Ok(false);
-    }
+pub fn task_key_generation_candidate_request_handler(
+    peer_id: String,
+    req: crate::p2p_proto::KeyGenerationCandidateRequest,
+) -> anyhow::Result<()> {
+    verify_to_candidate_signature(&peer_id.clone(), &req.clone(), move || {
+        let mut store_item = InitialPinnerStoreItem::try_from(req.clone())?;
+        if !willing_to_run(&store_item) {
+            info!(
+                "I'm not willing to run {}, just ignore",
+                &store_item.task_info.task_id
+            );
+            return Ok(());
+        }
 
-    if let Err(e) = check_capabilities(&store_item) {
-        info!(
-            "do not have capabilities to be executor of {}, details: {}",
-            &store_item.task_info.task_id, e
-        );
-        return Ok(false);
-    }
-    InitialPinnerStoreItem::save(&store_item)?;
+        if let Err(e) = check_capabilities(&store_item) {
+            info!(
+                "do not have capabilities to be executor of {}, details: {}",
+                &store_item.task_info.task_id, e
+            );
+            return Ok(());
+        }
+        InitialPinnerStoreItem::save(&store_item)?;
 
-    let task_info = store_item.task_info.clone();
-    lookup_node_profile_by_tea_id(&delegator_tea_id, "actor.delegate.inbox", move |profile| {
-        send_key_generation_request(&profile.peer_id, &task_info, true)?;
+        send_key_generation_request(&peer_id, &store_item.task_info, true)?;
+        store_item.state = StoreItemState::Requested;
+        InitialPinnerStoreItem::save(&store_item)?;
         Ok(())
     })
-    .map_err(|e| anyhow!("{}", e))?;
-
-    store_item.state = StoreItemState::Requested;
-    InitialPinnerStoreItem::save(&store_item)?;
-    Ok(true)
 }
 
 fn willing_to_run(_item: &InitialPinnerStoreItem) -> bool {

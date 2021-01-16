@@ -48,7 +48,7 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
         ["layer1", "event", "tea", "SignWithKeySlicesRequested"] => {
             sign_with_key_slices_handler(&msg)
         }
-        ["actor", "task", "inbox", uuid] => action::result_handler(&msg, uuid),
+        ["actor", "gluon", "inbox", uuid] => action::result_handler(&msg, uuid),
         ["reply", _actor, uuid] => action::result_handler(&msg, uuid),
         _ => Ok(()),
     }
@@ -150,6 +150,18 @@ fn listen_p2p_message(from_peer_id: &str, msg: &BrokerMessage) -> HandlerResult<
             Some(crate::p2p_proto::general_msg::Msg::TaskCommitSignResultRequest(req)) => Ok(
                 delegator::task_commit_sign_result_request_handler(req, from_peer_id, reply_to)?,
             ),
+            Some(crate::p2p_proto::general_msg::Msg::KeyGenerationCandidateRequest(req)) => {
+                Ok(match req.executor {
+                    true => executor::task_key_generation_candidate_request_handler(
+                        from_peer_id.to_string(),
+                        req,
+                    ),
+                    false => initial_pinner::task_key_generation_candidate_request_handler(
+                        from_peer_id.to_string(),
+                        req,
+                    ),
+                }?)
+            }
             _ => {
                 debug!("Task actor unhandled p2p message type");
                 Ok(response_reply_with_subject(

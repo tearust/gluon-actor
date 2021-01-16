@@ -2,6 +2,7 @@ mod executor_info;
 mod handler;
 mod key_gen;
 mod sign;
+mod verifier;
 
 pub use handler::{
     process_key_generation_event, process_sign_with_key_slices_event,
