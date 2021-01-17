@@ -1,6 +1,6 @@
 use super::store_item::DelegatorKeyGenStoreItem;
 use crate::common::send_key_candidate_request;
-use tea_actor_utility::layer1::lookup_node_profile_by_tea_id;
+use tea_actor_utility::{actor_ipfs::ipfs_swarm_peers, layer1::lookup_node_profile_by_tea_id};
 
 pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
     let _candidates_count = item.task_info.exec_info.n;
@@ -19,8 +19,7 @@ pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Re
 }
 
 pub fn invite_candidate_initial_pinners(item: &DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
-    // todo: get connected peers from `ipfs swarm peers`
-    let peers_ids: Vec<String> = Vec::new();
+    let peers_ids: Vec<String> = ipfs_swarm_peers()?;
     let candidates = random_select_peers(
         &peers_ids,
         item.task_info.exec_info.n,
