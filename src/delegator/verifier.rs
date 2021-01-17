@@ -21,6 +21,10 @@ where
         },
         move |msg| {
             let key: Option<Vec<u8>> = tea_codec::deserialize(msg.body.as_slice())?;
+            trace!(
+                "try_to_be_delegator call get_delegator_key got key: {:?}",
+                key
+            );
             if let Some(key) = key {
                 match rsa_decrypt(key, nonce_encrypted.clone()) {
                     Ok(nonce) => {
