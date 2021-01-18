@@ -1,0 +1,12 @@
+version: "3.2"
+
+services:
+  build-gluon:
+    container_name: build-gluon
+    image: tearust/dev:actor-build
+    working_dir: /tearust/gluon-actor
+    environment:
+      - CARGO_HOME=/tearust/.cargo
+    volumes:
+      - ../:/tearust
+    command: bash -c "make release"
