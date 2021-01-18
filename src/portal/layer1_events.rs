@@ -7,10 +7,9 @@ use wascc_actor::HandlerResult;
 pub fn key_generation_request_handler(msg: &BrokerMessage) -> HandlerResult<()> {
     let base64_decoded_msg_body = base64::decode(String::from_utf8(msg.body.clone())?)?;
     Ok(is_node_ready(crate::MY_ACTOR_NAME, move |ready| {
-        // todo: comment for test
-        // if !ready {
-        //     return Ok(());
-        // }
+        if !ready {
+            return Ok(());
+        }
 
         let key_generation_response = crate::actor_delegate_proto::KeyGenerationResponse::decode(
             base64_decoded_msg_body.as_slice(),
