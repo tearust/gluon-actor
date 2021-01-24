@@ -1,21 +1,41 @@
 use super::store_item::DelegatorKeyGenStoreItem;
 use crate::common::send_key_candidate_request;
-use tea_actor_utility::{actor_ipfs::ipfs_swarm_peers, layer1::lookup_node_profile_by_tea_id};
+use prost::Message;
+use tea_actor_utility::{
+    action, actor_ipfs::ipfs_swarm_peers, encode_protobuf, layer1::lookup_node_profile_by_tea_id,
+};
 
 pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
-    let _candidates_count = item.task_info.exec_info.n;
-    // todo: request candidates tea ids from layer1, with desired count of "candidates_count"
-    let candidates_tea_ids: Vec<Vec<u8>> = Vec::new();
+    let request = crate::actor_delegate_proto::GetDelegatesRequest {
+        start: 0,
+        limit: item.task_info.exec_info.n as u32,
+    };
 
-    for tea_id in candidates_tea_ids {
-        let task_info = item.task_info.clone();
-        lookup_node_profile_by_tea_id(&tea_id, "actor.gluon.inbox", move |profile| {
-            send_key_candidate_request(&profile.peer_id, task_info.clone(), true)?;
+    let task_info = item.task_info.clone();
+    action::call(
+        "layer1.async.reply.get_delegates",
+        "actor.gluon.inbox",
+        base64::encode(&encode_protobuf(request)?).into(),
+        move |msg| {
+            debug!("get_delegates go response: {:?}", msg);
+            let base64_decoded_msg_body = base64::decode(String::from_utf8(msg.body.clone())?)?;
+            let get_delegates_res = crate::actor_delegate_proto::GetDelegatesResponse::decode(
+                base64_decoded_msg_body.as_slice(),
+            )?;
+            let candidates_tea_ids: Vec<Vec<u8>> = get_delegates_res.delegates;
+
+            for tea_id in candidates_tea_ids {
+                let task_info = task_info.clone();
+                lookup_node_profile_by_tea_id(&tea_id, "actor.gluon.inbox", move |profile| {
+                    send_key_candidate_request(&profile.peer_id, task_info.clone(), true)?;
+                    Ok(())
+                })
+                .map_err(|e| anyhow::anyhow!("{}", e))?;
+            }
             Ok(())
-        })
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
-    }
-    Ok(())
+        },
+    )
+    .map_err(|e| anyhow::anyhow!("{}", e))
 }
 
 pub fn invite_candidate_initial_pinners(item: &DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
