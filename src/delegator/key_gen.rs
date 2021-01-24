@@ -1,9 +1,11 @@
 use crate::delegator::executor_info::ExecutorInfo;
 use crate::delegator::key_gen::initial_pinner_info::InitialPinnerInfo;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use store_item::{DelegatorKeyGenStoreItem, StoreItemState};
 use tea_actor_utility::{
+    action,
     actor_nats::response_reply_with_subject,
+    encode_protobuf,
     ipfs_p2p::{log_and_response, log_and_response_with_error, send_message, P2pReplyType},
 };
 
@@ -131,17 +133,38 @@ pub fn process_task_pinner_key_slice_response(
 
         if item.is_all_initial_pinners_ready() {
             item.state = StoreItemState::ReceivedAllPinnerResponse;
-            // todo commit an key generation response transaction to layer1
-        }
+            DelegatorKeyGenStoreItem::save(&item)?;
 
-        DelegatorKeyGenStoreItem::save(&item)?;
-        response_reply_with_subject(
-            "",
-            reply_to,
-            "received initial pinner key slice response"
-                .as_bytes()
-                .to_vec(),
-        )
+            let result: crate::actor_delegate_proto::UpdateKeyGenerationResult =
+                item.clone().try_into()?;
+            let reply_to = reply_to.to_string();
+            action::call(
+                "layer1.async.reply.update_generate_key_result",
+                "actor.gluon.inbox",
+                base64::encode(&encode_protobuf(result)?).into(),
+                move |msg| {
+                    debug!("update_generate_key_result go response: {:?}", msg);
+                    response_reply_with_subject(
+                        "",
+                        &reply_to,
+                        "received initial pinner key slice response"
+                            .as_bytes()
+                            .to_vec(),
+                    )?;
+                    Ok(())
+                },
+            )
+            .map_err(|e| anyhow::anyhow!("{}", e))
+        } else {
+            DelegatorKeyGenStoreItem::save(&item)?;
+            response_reply_with_subject(
+                "",
+                reply_to,
+                "received initial pinner key slice response"
+                    .as_bytes()
+                    .to_vec(),
+            )
+        }
     })
 }
 

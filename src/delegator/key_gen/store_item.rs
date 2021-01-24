@@ -4,7 +4,7 @@ use crate::delegator::key_gen::{ExecutorRequestConstructor, TaskCandidates};
 use crate::{common::TaskInfo, BINDING_NAME};
 use anyhow::anyhow;
 use std::collections::HashMap;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tea_actor_utility::actor_kvp::{self, ShabbyLock};
 use tea_codec::error::TeaError;
 
@@ -83,6 +83,31 @@ impl TryFrom<crate::actor_delegate_proto::KeyGenerationResponse> for DelegatorKe
             initial_pinner_responses: HashMap::new(),
             candidate_executors: Vec::new(),
             candidate_initial_pinners: Vec::new(),
+        })
+    }
+}
+
+impl TryInto<crate::actor_delegate_proto::UpdateKeyGenerationResult> for DelegatorKeyGenStoreItem {
+    type Error = TeaError;
+
+    fn try_into(
+        self,
+    ) -> Result<crate::actor_delegate_proto::UpdateKeyGenerationResult, Self::Error> {
+        Ok(crate::actor_delegate_proto::UpdateKeyGenerationResult {
+            task_id: self.task_info.task_id,
+            delegator_nonce: self.nonce,
+            multi_sig_account: self
+                .multi_sig_account
+                .ok_or(anyhow::anyhow!("multi-signature account is empty"))?,
+            public_key: self
+                .p2_public_key
+                .ok_or(anyhow::anyhow!("public key is empty"))?,
+            deployment_ids: self
+                .initial_pinner_responses
+                .into_iter()
+                .filter(|(_, v)| v.is_some())
+                .map(|item| item.1.unwrap().as_bytes().to_vec())
+                .collect(),
         })
     }
 }
