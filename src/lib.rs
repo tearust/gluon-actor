@@ -50,6 +50,12 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
         }
         ["actor", "gluon", "inbox", uuid] => action::result_handler(&msg, uuid),
         ["reply", _actor, uuid] => action::result_handler(&msg, uuid),
+
+        #[cfg(feature = "dev")]
+        ["internal", "op", "debug", "key_gen_response_message"] => {
+            delegator::dump_methods::generate_key_gen_response_message(&msg)
+        }
+
         _ => Ok(()),
     }
 }

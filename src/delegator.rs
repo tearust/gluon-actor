@@ -1,3 +1,4 @@
+pub mod dump_methods;
 mod executor_info;
 mod handler;
 mod key_gen;
