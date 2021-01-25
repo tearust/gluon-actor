@@ -34,6 +34,7 @@ actor_handlers! {
 }
 
 fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
+    trace!("gluon actor handle_message msg {:?}", &msg);
     let channel_parts: Vec<&str> = msg.subject.split('.').collect();
     match &channel_parts[..] {
         ["ipfs", "p2p", "listen", from_peer_id] => listen_p2p_message(&from_peer_id, &msg),

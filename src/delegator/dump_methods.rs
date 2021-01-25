@@ -13,6 +13,7 @@ use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
 
 pub fn generate_key_gen_response_message(msg: &BrokerMessage) -> HandlerResult<()> {
+    trace!("generate_key_gen_response_message msg: {:?}", msg);
     let key_type = String::from_utf8(msg.body.clone())?;
     let reply_to = msg.reply_to.clone();
 

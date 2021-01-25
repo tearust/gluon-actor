@@ -10,3 +10,12 @@ services:
     volumes:
       - ../:/tearust
     command: bash -c "make release"
+  build-gluon-dev:
+    container_name: build-gluon-dev
+    image: tearust/dev:actor-build
+    working_dir: /tearust/gluon-actor
+    environment:
+      - CARGO_HOME=/tearust/.cargo
+    volumes:
+      - ../:/tearust
+    command: bash -c "make dev"
