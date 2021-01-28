@@ -13,28 +13,31 @@ use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
 
 pub fn generate_key_gen_response_message(msg: &BrokerMessage) -> HandlerResult<()> {
-    trace!("generate_key_gen_response_message msg: {:?}", msg);
     let key_type = String::from_utf8(msg.body.clone())?;
     let reply_to = msg.reply_to.clone();
+    trace!(
+        "generate_key_gen_response_message with key type: {}",
+        key_type
+    );
 
     action::call_async_intercom(
         PINNER_ACTOR_NAME,
         MY_ACTOR_NAME,
         BrokerMessage {
-            subject: "actor.pinner.intercom.get_delegator_key".into(),
+            subject: "actor.pinner.intercom.get_delegator_pub_key".into(),
             reply_to: "".into(),
             body: Vec::new(),
         },
         move |msg| {
-            let key: Option<Vec<u8>> = tea_codec::deserialize(msg.body.as_slice())?;
-            let key = key.ok_or(anyhow::anyhow!("failed to get delegator key"))?;
+            let pub_key: Option<Vec<u8>> = tea_codec::deserialize(msg.body.as_slice())?;
+            let pub_key = pub_key.ok_or(anyhow::anyhow!("failed to get delegator key"))?;
             let nonce = wascc_actor::extras::default()
                 .get_random(u32::MIN, u32::MAX)
                 .map_err(|e| anyhow::anyhow!("{}", e))?;
             debug!("nonce is: {}", nonce);
             let nonce_bytes = nonce.to_le_bytes().to_vec();
             let delegator_tea_nonce_hash = sha256(nonce_bytes.clone())?;
-            let delegator_tea_nonce_rsa_encryption = rsa_encrypt(key, nonce_bytes)?;
+            let delegator_tea_nonce_rsa_encryption = rsa_encrypt(pub_key, nonce_bytes)?;
 
             let (p1_public_key, _) = generate(key_type.clone())?;
             let res = crate::actor_delegate_proto::KeyGenerationResponse {
