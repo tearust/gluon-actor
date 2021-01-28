@@ -37,6 +37,7 @@ pub fn process_key_generation_event(
         res.data_adhoc.delegator_tea_nonce_rsa_encryption.clone(),
         res.data_adhoc.delegator_tea_nonce_hash.clone(),
         move |nonce| {
+            trace!("i'm delegator, continue to invite executors and initial pinners");
             let mut store_item = DelegatorKeyGenStoreItem::try_from(res.clone())?;
             store_item.nonce = nonce;
             DelegatorKeyGenStoreItem::save(&store_item)?;

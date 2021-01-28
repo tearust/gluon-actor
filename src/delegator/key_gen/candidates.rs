@@ -12,12 +12,14 @@ pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Re
     };
 
     let task_info = item.task_info.clone();
+    let content = base64::encode(&encode_protobuf(request)?);
+    debug!("get_delegates request conent: {}", &content);
     action::call(
         "layer1.async.reply.get_delegates",
         "actor.gluon.inbox",
-        base64::encode(&encode_protobuf(request)?).into(),
+        content.into(),
         move |msg| {
-            debug!("get_delegates go response: {:?}", msg);
+            debug!("get_delegates got response: {:?}", msg);
             let base64_decoded_msg_body = base64::decode(String::from_utf8(msg.body.clone())?)?;
             let get_delegates_res = crate::actor_delegate_proto::GetDelegatesResponse::decode(
                 base64_decoded_msg_body.as_slice(),
@@ -40,6 +42,7 @@ pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Re
 
 pub fn invite_candidate_initial_pinners(item: &DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
     let peers_ids: Vec<String> = ipfs_swarm_peers()?;
+    debug!("get swarm peers while find initial pinners: {:?}", &peers_ids);
     let candidates: Vec<String> = random_select_peers(
         peers_ids,
         item.task_info.exec_info.n,
