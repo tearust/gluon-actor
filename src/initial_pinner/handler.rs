@@ -132,6 +132,7 @@ pub fn task_key_generation_candidate_request_handler(
     peer_id: String,
     req: crate::p2p_proto::KeyGenerationCandidateRequest,
 ) -> anyhow::Result<()> {
+    trace!("initial pinner received KeyGenerationCandidateRequest: {:?}", req);
     verify_to_candidate_signature(&peer_id.clone(), &req.clone(), move || {
         let mut store_item = InitialPinnerStoreItem::try_from(req.clone())?;
         if !willing_to_run(&store_item) {

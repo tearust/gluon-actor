@@ -19,12 +19,12 @@ pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Re
         "actor.gluon.inbox",
         content.into(),
         move |msg| {
-            debug!("get_delegates got response: {:?}", msg);
             let base64_decoded_msg_body = base64::decode(String::from_utf8(msg.body.clone())?)?;
             let get_delegates_res = crate::actor_delegate_proto::GetDelegatesResponse::decode(
                 base64_decoded_msg_body.as_slice(),
             )?;
             let candidates_tea_ids: Vec<Vec<u8>> = get_delegates_res.delegates;
+            debug!("get_delegates got response with candidates_tea_ids: {:?}", &candidates_tea_ids);
 
             for tea_id in candidates_tea_ids {
                 let task_info = task_info.clone();

@@ -34,14 +34,14 @@ actor_handlers! {
 }
 
 fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
-    trace!("gluon actor handle_message msg {:?}", &msg);
+    // trace!("gluon actor handle_message msg {:?}", &msg);
     let channel_parts: Vec<&str> = msg.subject.split('.').collect();
     match &channel_parts[..] {
         ["ipfs", "p2p", "listen", from_peer_id] => listen_p2p_message(&from_peer_id, &msg),
-        ["actor", "pinner", "event", "client_operation_after_verify"] => {
+        ["actor", PINNER_ACTOR_NAME, "event", "client_operation_after_verify"] => {
             pinner_client_operation_after_verify(&msg)
         }
-        ["actor", "pinner", "event", "server_check_strategy"] => pinner_server_check_strategy(&msg),
+        ["actor", PINNER_ACTOR_NAME, "event", "server_check_strategy"] => pinner_server_check_strategy(&msg),
 
         ["layer1", "event", "tea", "KeyGenerationRequested"] => {
             key_generation_request_handler(&msg)
@@ -49,8 +49,8 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
         ["layer1", "event", "tea", "SignWithKeySlicesRequested"] => {
             sign_with_key_slices_handler(&msg)
         }
-        ["actor", "gluon", "inbox", uuid] => action::result_handler(&msg, uuid),
-        ["reply", _actor, uuid] => action::result_handler(&msg, uuid),
+        ["actor", MY_ACTOR_NAME, "inbox", uuid] => action::result_handler(&msg, uuid),
+        ["reply", MY_ACTOR_NAME, uuid] => action::result_handler(&msg, uuid),
 
         #[cfg(feature = "dev")]
         ["internal", "op", "debug", "key_gen_response_message"] => {
