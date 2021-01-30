@@ -42,8 +42,11 @@ pub fn process_key_generation_event(
             store_item.nonce = nonce;
             DelegatorKeyGenStoreItem::save(&store_item)?;
 
-            candidates::invite_candidate_executors(&store_item)?;
-            candidates::invite_candidate_initial_pinners(&store_item)?;
+            candidates::invite_candidate_executors(&store_item, |task_info, peer_ids| {
+                Ok(candidates::invite_candidate_initial_pinners(
+                    task_info, peer_ids,
+                )?)
+            })?;
             store_item.state = StoreItemState::InvitedCandidates;
             DelegatorKeyGenStoreItem::save(&store_item)?;
             Ok(())

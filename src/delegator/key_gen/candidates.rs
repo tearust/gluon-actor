@@ -1,11 +1,18 @@
 use super::store_item::DelegatorKeyGenStoreItem;
-use crate::common::send_key_candidate_request;
+use crate::common::{send_key_candidate_request, TaskInfo};
 use prost::Message;
 use tea_actor_utility::{
     action, actor_ipfs::ipfs_swarm_peers, encode_protobuf, layer1::lookup_node_profile_by_tea_id,
 };
+use wascc_actor::HandlerResult;
 
-pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
+pub fn invite_candidate_executors<F>(
+    item: &DelegatorKeyGenStoreItem,
+    mut callback: F,
+) -> anyhow::Result<()>
+where
+    F: FnMut(TaskInfo, Vec<String>) -> HandlerResult<()> + Clone + Sync + Send + 'static,
+{
     let request = crate::actor_delegate_proto::GetDelegatesRequest {
         start: 0,
         limit: item.task_info.exec_info.n as u32,
@@ -23,8 +30,11 @@ pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Re
             let get_delegates_res = crate::actor_delegate_proto::GetDelegatesResponse::decode(
                 base64_decoded_msg_body.as_slice(),
             )?;
-            let candidates_tea_ids: Vec<Vec<u8>> = get_delegates_res.delegates;
-            debug!("get_delegates got response with candidates_tea_ids: {:?}", &candidates_tea_ids);
+            let candidates_tea_ids: Vec<Vec<u8>> = get_delegates_res
+                .delegates
+                .iter()
+                .map(|v| v.tea_id.clone())
+                .collect();
 
             for tea_id in candidates_tea_ids {
                 let task_info = task_info.clone();
@@ -34,25 +44,37 @@ pub fn invite_candidate_executors(item: &DelegatorKeyGenStoreItem) -> anyhow::Re
                 })
                 .map_err(|e| anyhow::anyhow!("{}", e))?;
             }
-            Ok(())
+
+            let task_info = task_info.clone();
+            let peer_ids: Vec<String> = get_delegates_res
+                .delegates
+                .iter()
+                .map(|v| v.peer_id.clone())
+                .collect();
+            debug!("get_delegates got response with peer_ids: {:?}", &peer_ids);
+            callback(task_info, peer_ids)
         },
     )
     .map_err(|e| anyhow::anyhow!("{}", e))
 }
 
-pub fn invite_candidate_initial_pinners(item: &DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
-    let peers_ids: Vec<String> = ipfs_swarm_peers()?;
-    debug!("get swarm peers while find initial pinners: {:?}", &peers_ids);
-    let candidates: Vec<String> = random_select_peers(
-        peers_ids,
-        item.task_info.exec_info.n,
-        &item.task_info.task_id,
-    )
-    .into_iter()
-    .take(item.task_info.exec_info.n as usize * 2)
-    .collect();
+pub fn invite_candidate_initial_pinners(
+    task_info: TaskInfo,
+    filter_ids: Vec<String>,
+) -> anyhow::Result<()> {
+    let mut peers_ids: Vec<String> = ipfs_swarm_peers()?;
+    peers_ids = peers_ids
+        .into_iter()
+        .filter(move |v| !filter_ids.contains(v))
+        .collect();
+
+    let candidates: Vec<String> =
+        random_select_peers(peers_ids, task_info.exec_info.n, &task_info.task_id)
+            .into_iter()
+            .take(task_info.exec_info.n as usize * 2)
+            .collect();
     for peer_id in candidates {
-        send_key_candidate_request(&peer_id, item.task_info.clone(), false)?;
+        send_key_candidate_request(&peer_id, task_info.clone(), false)?;
     }
     Ok(())
 }
