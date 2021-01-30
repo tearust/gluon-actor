@@ -23,6 +23,14 @@ pub struct ExecutorStoreItem {
 }
 
 impl ExecutorStoreItem {
+    pub fn contains(task_id: &str) -> anyhow::Result<bool> {
+        let _lock = ShabbyLock::lock(BINDING_NAME, task_id);
+        Ok(
+            actor_kvp::get::<ExecutorStoreItem>(BINDING_NAME, &get_task_store_item_key(task_id))?
+                .is_some(),
+        )
+    }
+
     pub fn get(task_id: &str) -> anyhow::Result<Self> {
         let _lock = ShabbyLock::lock(BINDING_NAME, task_id);
         actor_kvp::get::<ExecutorStoreItem>(BINDING_NAME, &get_task_store_item_key(task_id))?

@@ -1,4 +1,3 @@
-use super::store_item::InitialPinnerStoreItem;
 use crate::common::{
     decrypt_key_slice, send_key_generation_request, verify_to_candidate_signature,
 };
@@ -15,6 +14,8 @@ use tea_actor_utility::{
 };
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
+
+pub use super::store_item::InitialPinnerStoreItem;
 
 pub fn task_pinner_key_slice_request_handler(
     req: crate::p2p_proto::TaskPinnerKeySliceRequest,
