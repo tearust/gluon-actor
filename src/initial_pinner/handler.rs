@@ -153,7 +153,7 @@ pub fn task_key_generation_candidate_request_handler(
         }
         InitialPinnerStoreItem::save(&store_item)?;
 
-        send_key_generation_request(&peer_id, &store_item.task_info, true)?;
+        send_key_generation_request(&peer_id, &store_item.task_info, false)?;
         store_item.state = StoreItemState::Requested;
         InitialPinnerStoreItem::save(&store_item)?;
         Ok(())

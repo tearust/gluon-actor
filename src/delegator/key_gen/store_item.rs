@@ -47,7 +47,7 @@ impl TaskCandidates for DelegatorKeyGenStoreItem {
         // this is essential condition to construct an execution request
         return !self.candidate_executors.is_empty()
             && (self.candidate_executors.len() + self.candidate_initial_pinners.len())
-                > (self.task_info.exec_info.n + 1) as usize;
+                >= (self.task_info.exec_info.n + 1) as usize;
     }
 
     fn insert_executor(&mut self, executor: ExecutorInfo) {
@@ -175,7 +175,7 @@ impl DelegatorKeyGenStoreItem {
 
     fn select_initial_pinners(&mut self) -> anyhow::Result<()> {
         while self.initial_pinners.len() < self.task_info.exec_info.n as usize
-            || (self.candidate_initial_pinners.is_empty() && self.candidate_executors.is_empty())
+            || (!self.candidate_initial_pinners.is_empty() && !self.candidate_executors.is_empty())
         {
             if !self.candidate_initial_pinners.is_empty() {
                 if let Some(p) = self.candidate_initial_pinners.pop() {

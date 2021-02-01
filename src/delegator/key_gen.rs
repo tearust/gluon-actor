@@ -61,7 +61,6 @@ fn try_send_to_executor(item: &mut DelegatorKeyGenStoreItem) -> anyhow::Result<(
         debug!("continue to wait more candidates...");
         return Ok(());
     }
-    info!("collect enough candidates, begin to send request to executor");
 
     if !(item as &mut dyn ExecutorRequestConstructor).ready() {
         return Err(anyhow::anyhow!(
@@ -70,6 +69,8 @@ fn try_send_to_executor(item: &mut DelegatorKeyGenStoreItem) -> anyhow::Result<(
         ));
     }
 
+    info!("collect enough candidates, begin to send request to executor: {}", 
+        &item.executor.as_ref().unwrap().peer_id);
     let req = item.generate()?;
     send_message(
         &item.executor.as_ref().unwrap().peer_id,

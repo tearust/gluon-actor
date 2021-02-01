@@ -39,6 +39,7 @@ where
             for tea_id in candidates_tea_ids {
                 let task_info = task_info.clone();
                 lookup_node_profile_by_tea_id(&tea_id, "actor.gluon.inbox", move |profile| {
+                    debug!("begin to invite executor delegate {}", &profile.peer_id);
                     send_key_candidate_request(&profile.peer_id, task_info.clone(), true)?;
                     Ok(())
                 })
