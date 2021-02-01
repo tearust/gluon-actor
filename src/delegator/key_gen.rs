@@ -57,7 +57,11 @@ pub fn process_key_generation_event(
 fn try_send_to_executor(item: &mut DelegatorKeyGenStoreItem) -> anyhow::Result<()> {
     if (item as &mut dyn TaskCandidates).ready() {
         item.elect()?;
+    } else {
+        debug!("continue to wait more candidates...");
+        return Ok(());
     }
+    info!("collect enough candidates, begin to send request to executor");
 
     if !(item as &mut dyn ExecutorRequestConstructor).ready() {
         return Err(anyhow::anyhow!(

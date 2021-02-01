@@ -13,6 +13,7 @@ pub fn task_key_generation_candidate_request_handler(
     peer_id: String,
     req: crate::p2p_proto::KeyGenerationCandidateRequest,
 ) -> anyhow::Result<()> {
+    trace!("executor received KeyGenerationCandidateRequest: {:?}", req);
     verify_to_candidate_signature(&peer_id.clone(), &req.clone(), move || {
         let mut store_item = ExecutorStoreItem::try_from(req.clone())?;
 
@@ -99,6 +100,7 @@ pub fn generate_task_execution_response(
     item: &ExecutorStoreItem,
     request: &crate::p2p_proto::TaskExecutionRequest,
 ) -> anyhow::Result<crate::p2p_proto::TaskExecutionResponse> {
+    trace!("generating task execution response got request {:?}", request);
     let (pk, sk) = generate_key_by_type(&request.key_type)?;
     let key_slices = actor_crypto::shamir_share(
         request.initial_pinners.len() as u8,

@@ -97,12 +97,14 @@ fn pinner_client_operation_after_verify(msg: &BrokerMessage) -> HandlerResult<()
         file!()
     ))?;
     if delegator::is_key_gen_tag(&item) {
+        debug!("received ra succeed key gen response");
         delegator::key_gen_operation_after_verify_handler(
             res.peer_id,
             res.pinner_ephemeral_id,
             &item,
         )?;
     } else if delegator::is_sign_tag(&item) {
+        debug!("received ra succeed sign response");
         delegator::sign_operation_after_verify_handler(
             res.peer_id,
             res.pinner_ephemeral_id,

@@ -39,7 +39,7 @@ pub fn send_key_candidate_request(
         executor,
         signature,
     };
-    debug!("begin send_key_candidate_request with params: {:?}", req);
+    debug!("begin send_key_candidate_request to {} with params: {:?}", peer_id, &req);
     send_message(
         peer_id,
         &task_info.task_id,

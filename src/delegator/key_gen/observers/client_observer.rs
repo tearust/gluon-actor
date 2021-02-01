@@ -16,6 +16,7 @@ pub fn operation_after_verify_handler(
     _ephemeral_id: Vec<u8>,
     item: &crate::actor_pinner_proto::ChallangeStoreItem,
 ) -> anyhow::Result<()> {
+    debug!("operation_after_verify_handler item: {:?}", item);
     let task_id = &item
         .properties
         .iter()
@@ -55,10 +56,12 @@ pub fn on_executor_ra_success(
     rsa_pub_key: Vec<u8>,
 ) -> anyhow::Result<()> {
     let mut store_item = DelegatorKeyGenStoreItem::get(task_id)?;
-    if store_item.state != StoreItemState::Init {
+    if store_item.state != StoreItemState::InvitedCandidates {
+        debug!("executor RA response ignored because state is: {:?}", &store_item.state);
         return Ok(());
     }
 
+    debug!("validate executor {} successfully", peer_id);
     store_item.insert_executor(ExecutorInfo {
         peer_id: peer_id.to_string(),
         rsa_pub_key,
@@ -74,10 +77,12 @@ pub fn on_initial_pinner_ra_success(
     rsa_pub_key: Vec<u8>,
 ) -> anyhow::Result<()> {
     let mut store_item = DelegatorKeyGenStoreItem::get(task_id)?;
-    if store_item.state != StoreItemState::Init {
+    if store_item.state != StoreItemState::InvitedCandidates {
+        debug!("initial pinner RA response ignored because state is: {:?}", &store_item.state);
         return Ok(());
     }
 
+    debug!("validate initial pinner {} successfully", peer_id);
     store_item.insert_initial_pinner(InitialPinnerInfo {
         peer_id: peer_id.to_string(),
         rsa_pub_key,
