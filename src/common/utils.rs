@@ -20,6 +20,7 @@ pub fn send_ra_request(peer_id: String, properties: HashMap<String, String>) -> 
             subject: "actor.pinner.intercom.request_peer_approve_ra".into(),
             reply_to: "".into(),
             body: encode_protobuf(crate::actor_pinner_proto::PeerApproveRaRequest {
+                send_to_actor: crate::MY_ACTOR_NAME.to_string(),
                 peer_id,
                 properties: from_hash_map(properties),
             })?,

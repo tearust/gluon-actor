@@ -41,7 +41,9 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
         ["actor", PINNER_ACTOR_NAME, "event", "client_operation_after_verify"] => {
             pinner_client_operation_after_verify(&msg)
         }
-        ["actor", PINNER_ACTOR_NAME, "event", "server_check_strategy"] => pinner_server_check_strategy(&msg),
+        ["actor", PINNER_ACTOR_NAME, "event", "server_check_strategy"] => {
+            pinner_server_check_strategy(&msg)
+        }
 
         ["layer1", "event", "tea", "KeyGenerationRequested"] => {
             key_generation_request_handler(&msg)
@@ -72,17 +74,19 @@ fn pinner_server_check_strategy(msg: &BrokerMessage) -> HandlerResult<()> {
         line!(),
         file!()
     ))?;
-    if delegator::is_key_gen_tag(&item) || delegator::is_sign_tag(&item) {
-        return Ok(response_reply_with_subject(
-            "",
-            &msg.reply_to,
-            encode_protobuf(crate::actor_pinner_proto::ServerCheckStrategyResult {
-                verify: true,
-                message: "passed".to_string(),
-            })?,
-        )?);
-    }
-    Ok(())
+    let (verify, message) = if delegator::is_key_gen_tag(&item) || delegator::is_sign_tag(&item) {
+        (true, "passed".to_string())
+    } else {
+        (
+            false,
+            format!("{}:{} item not found in delegator", line!(), file!()),
+        )
+    };
+    Ok(response_reply_with_subject(
+        "",
+        &msg.reply_to,
+        encode_protobuf(crate::actor_pinner_proto::ServerCheckStrategyResult { verify, message })?,
+    )?)
 }
 
 fn pinner_client_operation_after_verify(msg: &BrokerMessage) -> HandlerResult<()> {

@@ -54,6 +54,7 @@ fn begin_find_pinners(
             subject: "actor.pinner.intercom.find_pinners".into(),
             reply_to: "".into(),
             body: encode_protobuf(crate::actor_pinner_proto::FindPinnersRequest {
+                send_to_actor: crate::MY_ACTOR_NAME.to_string(),
                 deployment_id,
                 properties: from_hash_map(properties),
                 delay_seconds: 0,
