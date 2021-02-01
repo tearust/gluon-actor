@@ -91,6 +91,7 @@ pub fn process_task_execution_response(
     peer_id: &str,
     reply_to: &str,
 ) -> anyhow::Result<()> {
+    debug!("process_task_execution_response from {} with response {:?}", peer_id, &res);
     delegator_store_item_handler(&res.task_id, peer_id, reply_to, |item| {
         let mut item = item;
         item.p2_public_key = Some(res.p2_public_key.clone());
@@ -119,6 +120,7 @@ pub fn process_task_pinner_key_slice_response(
     peer_id: &str,
     reply_to: &str,
 ) -> anyhow::Result<()> {
+    debug!("process_task_pinner_key_slice_response from {} with response: {:?}", peer_id, &res);
     delegator_store_item_handler(&res.task_id, peer_id, reply_to, |item| {
         let mut item = item;
         match item.initial_pinner_responses.get_mut(peer_id) {
@@ -141,6 +143,7 @@ pub fn process_task_pinner_key_slice_response(
         }
 
         if item.is_all_initial_pinners_ready() {
+            debug!("all initial pinners ready, begin to update key generation result");
             item.state = StoreItemState::ReceivedAllPinnerResponse;
             DelegatorKeyGenStoreItem::save(&item)?;
 
