@@ -1,7 +1,8 @@
-use crate::common::{
-    decrypt_key_slice, send_key_generation_request, verify_to_candidate_signature,
-};
 use crate::initial_pinner::store_item::StoreItemState;
+use crate::{
+    common::{decrypt_key_slice, send_key_generation_request, verify_to_candidate_signature},
+    executor::ExecutorStoreItem,
+};
 use serde::export::TryFrom;
 use tea_actor_utility::actor_crypto::{aes_encrypt, generate_aes_key};
 use tea_actor_utility::actor_ipfs::ipfs_block_put;
@@ -22,7 +23,7 @@ pub fn task_pinner_key_slice_request_handler(
     peer_id: String,
     reply_to: String,
 ) -> anyhow::Result<()> {
-    match InitialPinnerStoreItem::get(&req.task_id) {
+    match trying_get_initial_pinner_store_item(&req.task_id) {
         Ok(mut item) => {
             item.state = StoreItemState::Responded;
             InitialPinnerStoreItem::save(&item)?;
@@ -133,7 +134,10 @@ pub fn task_key_generation_candidate_request_handler(
     peer_id: String,
     req: crate::p2p_proto::KeyGenerationCandidateRequest,
 ) -> anyhow::Result<()> {
-    trace!("initial pinner received KeyGenerationCandidateRequest: {:?}", req);
+    trace!(
+        "initial pinner received KeyGenerationCandidateRequest: {:?}",
+        req
+    );
     verify_to_candidate_signature(&peer_id.clone(), &req.clone(), move || {
         let mut store_item = InitialPinnerStoreItem::try_from(req.clone())?;
         if !willing_to_run(&store_item) {
@@ -168,4 +172,14 @@ fn willing_to_run(_item: &InitialPinnerStoreItem) -> bool {
 fn check_capabilities(_item: &InitialPinnerStoreItem) -> anyhow::Result<()> {
     // todo check if capabilities of my tea-box meets the request of task_info
     Ok(())
+}
+
+fn trying_get_initial_pinner_store_item(task_id: &str) -> anyhow::Result<InitialPinnerStoreItem> {
+    match InitialPinnerStoreItem::get(task_id) {
+        Ok(item) => Ok(item),
+        Err(_) => match ExecutorStoreItem::get(task_id) {
+            Ok(item) => Ok(item.into()),
+            Err(e) => Err(e),
+        },
+    }
 }

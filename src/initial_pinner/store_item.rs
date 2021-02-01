@@ -1,4 +1,5 @@
 use crate::common::TaskInfo;
+use crate::executor::{ExecutorStoreItem, StoreItemState as ExecutorStoreItemState};
 use crate::BINDING_NAME;
 use serde::export::TryFrom;
 use tea_actor_utility::actor_kvp;
@@ -59,6 +60,20 @@ impl TryFrom<crate::p2p_proto::KeyGenerationCandidateRequest> for InitialPinnerS
             task_info: TaskInfo::try_from(value)?,
             state: StoreItemState::Init,
         })
+    }
+}
+
+impl From<ExecutorStoreItem> for InitialPinnerStoreItem {
+    fn from(item: ExecutorStoreItem) -> Self {
+        InitialPinnerStoreItem {
+            task_info: item.task_info,
+            state: match item.state {
+                ExecutorStoreItemState::Init => StoreItemState::Init,
+                ExecutorStoreItemState::Requested => StoreItemState::Requested,
+                ExecutorStoreItemState::Responded => StoreItemState::Responded,
+                ExecutorStoreItemState::Executed => StoreItemState::Deployed,
+            },
+        }
     }
 }
 
