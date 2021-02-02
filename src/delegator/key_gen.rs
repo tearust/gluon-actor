@@ -69,8 +69,10 @@ fn try_send_to_executor(item: &mut DelegatorKeyGenStoreItem) -> anyhow::Result<(
         ));
     }
 
-    info!("collect enough candidates, begin to send request to executor: {}", 
-        &item.executor.as_ref().unwrap().peer_id);
+    info!(
+        "collect enough candidates, begin to send request to executor: {}",
+        &item.executor.as_ref().unwrap().peer_id
+    );
     let req = item.generate()?;
     send_message(
         &item.executor.as_ref().unwrap().peer_id,
@@ -91,7 +93,10 @@ pub fn process_task_execution_response(
     peer_id: &str,
     reply_to: &str,
 ) -> anyhow::Result<()> {
-    debug!("process_task_execution_response from {} with response {:?}", peer_id, &res);
+    debug!(
+        "process_task_execution_response from {} with response {:?}",
+        peer_id, &res
+    );
     delegator_store_item_handler(&res.task_id, peer_id, reply_to, |item| {
         let mut item = item;
         item.p2_public_key = Some(res.p2_public_key.clone());
@@ -104,6 +109,7 @@ pub fn process_task_execution_response(
                 &item.task_info.task_id,
                 pinner_data,
                 &res.p2_public_key,
+                &res.multi_sig_account,
             )?;
             item.initial_pinner_responses
                 .insert(pinner_data.peer_id.clone(), None);
@@ -120,7 +126,10 @@ pub fn process_task_pinner_key_slice_response(
     peer_id: &str,
     reply_to: &str,
 ) -> anyhow::Result<()> {
-    debug!("process_task_pinner_key_slice_response from {} with response: {:?}", peer_id, &res);
+    debug!(
+        "process_task_pinner_key_slice_response from {} with response: {:?}",
+        peer_id, &res
+    );
     delegator_store_item_handler(&res.task_id, peer_id, reply_to, |item| {
         let mut item = item;
         match item.initial_pinner_responses.get_mut(peer_id) {
@@ -207,6 +216,7 @@ fn share_slices_to_initial_pinner(
     task_id: &str,
     data: &crate::p2p_proto::TaskResultInitialPinnerData,
     pub_key: &[u8],
+    multi_sig_account: &[u8],
 ) -> anyhow::Result<()> {
     send_message(
         &data.peer_id,
@@ -218,6 +228,7 @@ fn share_slices_to_initial_pinner(
                         task_id: task_id.to_string(),
                         public_key: pub_key.to_vec(),
                         encrypted_key_slice: data.encrypted_key_slice.clone(),
+                        multi_sig_account: multi_sig_account.to_vec(),
                     },
                 ),
             ),

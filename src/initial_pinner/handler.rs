@@ -1,15 +1,17 @@
-use crate::initial_pinner::store_item::StoreItemState;
 use crate::{
     common::{decrypt_key_slice, send_key_generation_request, verify_to_candidate_signature},
     executor::ExecutorStoreItem,
+    initial_pinner::store_item::StoreItemState,
+    BINDING_NAME,
 };
 use serde::export::TryFrom;
-use tea_actor_utility::actor_crypto::{aes_encrypt, generate_aes_key};
-use tea_actor_utility::actor_ipfs::ipfs_block_put;
-use tea_actor_utility::actor_util::{rsa_encrypt, rsa_key_to_bytes};
 use tea_actor_utility::{
     action,
+    actor_crypto::{aes_encrypt, generate_aes_key},
+    actor_ipfs::ipfs_block_put,
+    actor_kvp,
     actor_nats::response_reply_with_subject,
+    actor_util::{rsa_encrypt, rsa_key_to_bytes},
     encode_protobuf,
     ipfs_p2p::{log_and_response_with_error, send_message},
 };
@@ -17,6 +19,9 @@ use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
 
 pub use super::store_item::InitialPinnerStoreItem;
+
+const TEMP_DEPLOYMENT_ID_KEY_PREFIX: &'static str = "depl-id";
+const TEMP_DATA_CID_KEY_PREFIX: &'static str = "data-cid";
 
 pub fn task_pinner_key_slice_request_handler(
     req: crate::p2p_proto::TaskPinnerKeySliceRequest,
@@ -28,7 +33,14 @@ pub fn task_pinner_key_slice_request_handler(
             item.state = StoreItemState::Responded;
             InitialPinnerStoreItem::save(&item)?;
 
+            let multi_sig_account = req.multi_sig_account.clone();
             deploy_key_slice(req.clone(), move |deployment_id| {
+                actor_kvp::set(
+                    BINDING_NAME,
+                    &get_temp_deployment_key(&multi_sig_account),
+                    &deployment_id,
+                    6000,
+                )?;
                 item.state = StoreItemState::Deployed;
                 InitialPinnerStoreItem::save(&item)?;
 
@@ -93,12 +105,16 @@ where
             let encrypted_data = aes_encrypt(key1.clone(), key_slice)?;
             let (data_cid, _) = ipfs_block_put(&encrypted_data, true)?;
 
+            actor_kvp::set(
+                BINDING_NAME,
+                &get_temp_data_cid_key(&req.multi_sig_account),
+                &data_cid,
+                6000,
+            )?;
+
             let pk_str = String::from_utf8(msg.body.clone())?;
             let rsa_pub_key = rsa_key_to_bytes(pk_str)?;
-            let subject = format!(
-                "actor.pinner.intercom.data_upload_completed_process.{}",
-                &session_id
-            );
+            let subject = format!("actor.pinner.intercom.process_data_upload.{}", &session_id);
             let to_value = |value: String| Some(crate::actor_pinner_proto::StringValue { value });
             let mut callback = callback.clone();
             action::call_async_intercom(
@@ -172,6 +188,22 @@ fn willing_to_run(_item: &InitialPinnerStoreItem) -> bool {
 fn check_capabilities(_item: &InitialPinnerStoreItem) -> anyhow::Result<()> {
     // todo check if capabilities of my tea-box meets the request of task_info
     Ok(())
+}
+
+fn get_temp_deployment_key(multi_sig_account: &[u8]) -> String {
+    format!(
+        "{}-{}",
+        TEMP_DEPLOYMENT_ID_KEY_PREFIX,
+        base64::encode(multi_sig_account)
+    )
+}
+
+fn get_temp_data_cid_key(multi_sig_account: &[u8]) -> String {
+    format!(
+        "{}-{}",
+        TEMP_DATA_CID_KEY_PREFIX,
+        base64::encode(multi_sig_account)
+    )
 }
 
 fn trying_get_initial_pinner_store_item(task_id: &str) -> anyhow::Result<InitialPinnerStoreItem> {
