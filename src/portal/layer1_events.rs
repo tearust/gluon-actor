@@ -54,13 +54,13 @@ pub fn sign_with_key_slices_handler(msg: &BrokerMessage) -> HandlerResult<()> {
     })?)
 }
 
-pub fn asset_generated_event_handler(_msg: &BrokerMessage) -> HandlerResult<()> {
-    // todo get multi_sig_account from protobuf, decode from msg
-    let task_id = String::new();
-    let multi_sig_account: Vec<u8> = Vec::new();
-    let deployment_ids: Vec<String> = Vec::new();
-    update_conflict_list(&multi_sig_account, deployment_ids)?;
-    trying_commit_data_upload(&task_id, &multi_sig_account)?;
+pub fn asset_generated_event_handler(msg: &BrokerMessage) -> HandlerResult<()> {
+    let base64_decoded_msg_body = base64::decode(String::from_utf8(msg.body.clone())?)?;
+    let res = crate::actor_delegate_proto::AssetGeneratedResponse::decode(
+        base64_decoded_msg_body.as_slice(),
+    )?;
+    update_conflict_list(&res.multi_sig_account, res.asset_info.p2_deployment_ids)?;
+    trying_commit_data_upload(&res.task_id, &res.multi_sig_account)?;
 
     Ok(())
 }
