@@ -1,4 +1,5 @@
 use crate::delegator::process_key_generation_event;
+use crate::initial_pinner::trying_commit_data_upload;
 use prost::Message;
 use tea_actor_utility::{actor_env::get_my_tea_id, actor_pinner::is_node_ready};
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
@@ -51,4 +52,13 @@ pub fn sign_with_key_slices_handler(msg: &BrokerMessage) -> HandlerResult<()> {
         crate::executor::process_sign_with_key_slices_event(sign_with_key_slices_request)?;
         Ok(())
     })?)
+}
+
+pub fn asset_generated_event_handler(_msg: &BrokerMessage) -> HandlerResult<()> {
+    // todo get multi_sig_account from protobuf, decode from msg
+    let task_id = String::new();
+    let multi_sig_account: Vec<u8> = Vec::new();
+    trying_commit_data_upload(&task_id, &multi_sig_account)?;
+
+    Ok(())
 }

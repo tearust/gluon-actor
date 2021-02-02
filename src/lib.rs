@@ -1,7 +1,10 @@
-use portal::{key_generation_request_handler, sign_with_key_slices_handler};
+use portal::{
+    asset_generated_event_handler, key_generation_request_handler, sign_with_key_slices_handler,
+};
 use prost::Message;
-use tea_actor_utility::actor_nats::response_reply_with_subject;
-use tea_actor_utility::{action, encode_protobuf, ipfs_p2p, p2p_proto};
+use tea_actor_utility::{
+    action, actor_nats::response_reply_with_subject, encode_protobuf, ipfs_p2p, p2p_proto,
+};
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::prelude::*;
 use wascc_actor::HandlerResult;
@@ -51,6 +54,7 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
         ["layer1", "event", "tea", "SignWithKeySlicesRequested"] => {
             sign_with_key_slices_handler(&msg)
         }
+        ["layer1", "event", "tea", "AssetGenerated"] => asset_generated_event_handler(&msg),
         ["actor", MY_ACTOR_NAME, "inbox", uuid] => action::result_handler(&msg, uuid),
         ["reply", MY_ACTOR_NAME, uuid] => action::result_handler(&msg, uuid),
 

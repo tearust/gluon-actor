@@ -23,6 +23,43 @@ pub use super::store_item::InitialPinnerStoreItem;
 const TEMP_DEPLOYMENT_ID_KEY_PREFIX: &'static str = "depl-id";
 const TEMP_DATA_CID_KEY_PREFIX: &'static str = "data-cid";
 
+pub fn trying_commit_data_upload(task_id: &str, multi_sig_account: &[u8]) -> anyhow::Result<()> {
+    match InitialPinnerStoreItem::get(task_id) {
+        Ok(_) => {
+            let cid_code: String =
+                actor_kvp::get(BINDING_NAME, &get_temp_data_cid_key(multi_sig_account))?.ok_or(
+                    anyhow::anyhow!("failed to get data cid when commit data upload"),
+                )?;
+            let deployment_id: String =
+                actor_kvp::get(BINDING_NAME, &get_temp_deployment_key(multi_sig_account))?.ok_or(
+                    anyhow::anyhow!("failed to get deployment id when commit data upload"),
+                )?;
+            action::call_async_intercom(
+                crate::PINNER_ACTOR_NAME,
+                crate::MY_ACTOR_NAME,
+                BrokerMessage {
+                    subject: "actor.pinner.intercom.commit_data_upload".into(),
+                    reply_to: "".into(),
+                    body: encode_protobuf(crate::actor_pinner_proto::CommitDataUploadRequest {
+                        deployment_id,
+                        cid_code,
+                        cid_description: "".into(), // todo add description about key slice
+                        cid_capchecker: "".into(),
+                    })?,
+                },
+                move |msg| {
+                    debug!("commit_data_upload got response: {:?}", msg);
+                    Ok(())
+                },
+            )
+        }
+        Err(_) => {
+            debug!("i'm not initial_pinner of {}, just ignore", task_id);
+            Ok(())
+        }
+    }
+}
+
 pub fn task_pinner_key_slice_request_handler(
     req: crate::p2p_proto::TaskPinnerKeySliceRequest,
     peer_id: String,

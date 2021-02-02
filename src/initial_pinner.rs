@@ -1,7 +1,9 @@
 mod handler;
 mod store_item;
 
-pub use handler::{task_pinner_key_slice_request_handler, InitialPinnerStoreItem};
+pub use handler::{
+    task_pinner_key_slice_request_handler, trying_commit_data_upload, InitialPinnerStoreItem,
+};
 
 pub fn task_key_generation_candidate_request_handler(
     peer_id: String,
