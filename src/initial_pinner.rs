@@ -2,7 +2,8 @@ mod handler;
 mod store_item;
 
 pub use handler::{
-    task_pinner_key_slice_request_handler, trying_commit_data_upload, InitialPinnerStoreItem,
+    task_pinner_key_slice_request_handler, trying_commit_data_upload, update_conflict_list,
+    InitialPinnerStoreItem,
 };
 
 pub fn task_key_generation_candidate_request_handler(

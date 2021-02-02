@@ -60,6 +60,38 @@ pub fn trying_commit_data_upload(task_id: &str, multi_sig_account: &[u8]) -> any
     }
 }
 
+pub fn update_conflict_list(
+    multi_sig_account: &[u8],
+    deployment_ids: Vec<String>,
+) -> anyhow::Result<()> {
+    let current_items = match actor_kvp::get::<String>(
+        BINDING_NAME,
+        &get_temp_deployment_key(multi_sig_account),
+    )? {
+        Some(id) => vec![id],
+        None => vec![],
+    };
+
+    action::call_async_intercom(
+        crate::PINNER_ACTOR_NAME,
+        crate::MY_ACTOR_NAME,
+        BrokerMessage {
+            subject: "actor.pinner.intercom.update_conflict_list".into(),
+            reply_to: "".into(),
+            body: encode_protobuf(crate::actor_pinner_proto::UpdateConflictListRequest {
+                key: multi_sig_account.to_vec(),
+                deployment_ids,
+                current_items,
+                max_allowed: 1, // todo: modify here if single node can deploy multiple key slices
+            })?,
+        },
+        move |msg| {
+            debug!("update_conflict_list got response: {:?}", msg);
+            Ok(())
+        },
+    )
+}
+
 pub fn task_pinner_key_slice_request_handler(
     req: crate::p2p_proto::TaskPinnerKeySliceRequest,
     peer_id: String,

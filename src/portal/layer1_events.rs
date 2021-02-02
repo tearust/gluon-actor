@@ -1,5 +1,5 @@
 use crate::delegator::process_key_generation_event;
-use crate::initial_pinner::trying_commit_data_upload;
+use crate::initial_pinner::{trying_commit_data_upload, update_conflict_list};
 use prost::Message;
 use tea_actor_utility::{actor_env::get_my_tea_id, actor_pinner::is_node_ready};
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
@@ -58,6 +58,8 @@ pub fn asset_generated_event_handler(_msg: &BrokerMessage) -> HandlerResult<()> 
     // todo get multi_sig_account from protobuf, decode from msg
     let task_id = String::new();
     let multi_sig_account: Vec<u8> = Vec::new();
+    let deployment_ids: Vec<String> = Vec::new();
+    update_conflict_list(&multi_sig_account, deployment_ids)?;
     trying_commit_data_upload(&task_id, &multi_sig_account)?;
 
     Ok(())
