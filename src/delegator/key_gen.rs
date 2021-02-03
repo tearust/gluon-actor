@@ -164,7 +164,7 @@ pub fn process_task_pinner_key_slice_response(
                 "actor.gluon.inbox",
                 base64::encode(&encode_protobuf(result)?).into(),
                 move |msg| {
-                    debug!("update_generate_key_result go response: {:?}", msg);
+                    debug!("update_generate_key_result got response: {:?}", msg);
                     response_reply_with_subject(
                         "",
                         &reply_to,

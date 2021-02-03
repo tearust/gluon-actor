@@ -59,6 +59,7 @@ pub fn asset_generated_event_handler(msg: &BrokerMessage) -> HandlerResult<()> {
     let res = crate::actor_delegate_proto::AssetGeneratedResponse::decode(
         base64_decoded_msg_body.as_slice(),
     )?;
+    debug!("asset_generated_event_handler got response: {:?}", res);
     update_conflict_list(&res.multi_sig_account, res.asset_info.p2_deployment_ids)?;
     trying_commit_data_upload(&res.task_id, &res.multi_sig_account)?;
 

@@ -72,6 +72,7 @@ pub fn update_conflict_list(
         None => vec![],
     };
 
+    debug!("begin to update conflict list, current items is {:?}", &current_items);
     action::call_async_intercom(
         crate::PINNER_ACTOR_NAME,
         crate::MY_ACTOR_NAME,
