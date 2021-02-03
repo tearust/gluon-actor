@@ -106,7 +106,7 @@ impl TryInto<crate::actor_delegate_proto::UpdateKeyGenerationResult> for Delegat
                 .initial_pinner_responses
                 .into_iter()
                 .filter(|(_, v)| v.is_some())
-                .map(|item| item.1.unwrap().as_bytes().to_vec())
+                .map(|item| item.1.unwrap())
                 .collect(),
         })
     }
