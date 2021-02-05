@@ -100,7 +100,10 @@ pub fn generate_task_execution_response(
     item: &ExecutorStoreItem,
     request: &crate::p2p_proto::TaskExecutionRequest,
 ) -> anyhow::Result<crate::p2p_proto::TaskExecutionResponse> {
-    trace!("generating task execution response got request {:?}", request);
+    trace!(
+        "generating task execution response got request {:?}",
+        request
+    );
     let (pk, sk) = generate_key_by_type(&request.key_type)?;
     let key_slices = actor_crypto::shamir_share(
         request.initial_pinners.len() as u8,
@@ -149,7 +152,12 @@ fn generate_multi_sig_account(
     if let Some(p3) = p3 {
         public_keys.push(p3);
     }
-    Ok(generate_multi_sig_asset(k, public_keys, task_type.to_string())?.into_bytes())
+    let multi_sig_account = generate_multi_sig_asset(k, public_keys, task_type.to_string())?;
+    debug!(
+        "executor generated multi sig account is: {}",
+        &multi_sig_account
+    );
+    Ok(multi_sig_account.into_bytes())
 }
 
 fn generate_key_by_type(key_type: &str) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {

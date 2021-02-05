@@ -58,6 +58,10 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
         ["internal", "op", "debug", "key_gen_response_message"] => {
             delegator::dump_methods::generate_key_gen_response_message(&msg)
         }
+        #[cfg(feature = "dev")]
+        ["internal", "op", "debug", "generate_sign_response"] => {
+            delegator::dump_methods::generate_sign_response_message(&msg)
+        }
 
         _ => Ok(()),
     }
