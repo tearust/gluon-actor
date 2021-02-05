@@ -4,7 +4,7 @@ mod sign;
 mod store_item;
 
 pub use handler::{
-    process_sign_with_key_slices_event, task_execution_request_handler,
+    process_sign_with_key_slices_handler, task_execution_request_handler,
     task_sign_with_key_slices_response_handler, ExecutorStoreItem, StoreItemState,
 };
 

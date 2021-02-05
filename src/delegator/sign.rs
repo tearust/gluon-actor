@@ -6,7 +6,7 @@ mod observers;
 mod ra;
 mod store_item;
 
-use crate::common::utils::from_hash_map;
+use crate::common::utils::{from_hash_map, invite_candidate_executors};
 use crate::common::ExecutionInfo;
 use crate::delegator::sign::store_item::KeySliceInfo;
 pub use observers::{is_sign_tag, operation_after_verify_handler};
@@ -26,8 +26,6 @@ pub fn process_sign_with_key_slices_event(
             item.nonce = nonce;
             // todo query p1 public key from layer1 by item.multi_sig_account, and verify item.p1_signature
 
-            DelegatorSignStoreItem::save(&item)?;
-
             let properties = ra::generate_pinner_ra_properties(&item.task_info.task_id);
 
             // todo query n,k,keyType and deployment ids from layer1 by item.multi_sig_account
@@ -38,12 +36,36 @@ pub fn process_sign_with_key_slices_event(
 
             item.task_info.exec_info = ExecutionInfo { n, k, task_type };
             item.init_deployment_resources(&deployment_ids);
-            for id in deployment_ids {
-                begin_find_pinners(id, properties.clone())?;
-            }
-
-            item.state = StoreItemState::FindingDeployments;
+            item.state = StoreItemState::Initialized;
             DelegatorSignStoreItem::save(&item)?;
+
+            invite_candidate_executors(
+                item.task_info.clone(),
+                move |task_info, peer_id| {
+                    send_message(
+                        &peer_id,
+                        &task_info.task_id,
+                        crate::p2p_proto::GeneralMsg {
+                            msg: Some(crate::p2p_proto::general_msg::Msg::SignCandidateRequest(
+                                crate::p2p_proto::SignCandidateRequest {
+                                    task_id: task_info.task_id.clone(),
+                                    multi_sig_account: item.multi_sig_account.clone(),
+                                },
+                            )),
+                        },
+                    )
+                },
+                move |task_info, _| {
+                    for id in deployment_ids.iter() {
+                        begin_find_pinners(id.to_string(), properties.clone())?;
+                    }
+
+                    let mut item = DelegatorSignStoreItem::get(&task_info.task_id)?;
+                    item.state = StoreItemState::FindingDeployments;
+                    DelegatorSignStoreItem::save(&item)?;
+                    Ok(())
+                },
+            )?;
             Ok(())
         },
     )

@@ -12,6 +12,7 @@ const PREFIX_DELEGATOR_TASK_SIGN_STORE_ITEM: &'static str = "delegator_task_sign
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub enum StoreItemState {
     Init,
+    Initialized,
     FindingDeployments,
     SentToExecutor,
     CommitResult,

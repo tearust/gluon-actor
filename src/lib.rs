@@ -48,12 +48,8 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
             pinner_server_check_strategy(&msg)
         }
 
-        ["layer1", "event", _, "KeyGenerationRequested"] => {
-            key_generation_request_handler(&msg)
-        }
-        ["layer1", "event", _, "SignWithKeySlicesRequested"] => {
-            sign_with_key_slices_handler(&msg)
-        }
+        ["layer1", "event", _, "KeyGenerationRequested"] => key_generation_request_handler(&msg),
+        ["layer1", "event", _, "SignWithKeySlicesRequested"] => sign_with_key_slices_handler(&msg),
         ["layer1", "event", _, "AssetGenerated"] => asset_generated_event_handler(&msg),
         ["actor", MY_ACTOR_NAME, "inbox", uuid] => action::result_handler(&msg, uuid),
         ["reply", MY_ACTOR_NAME, uuid] => action::result_handler(&msg, uuid),
@@ -179,6 +175,9 @@ fn listen_p2p_message(from_peer_id: &str, msg: &BrokerMessage) -> HandlerResult<
                     ),
                 }?)
             }
+            Some(crate::p2p_proto::general_msg::Msg::SignCandidateRequest(req)) => Ok(
+                executor::process_sign_with_key_slices_handler(from_peer_id, req)?,
+            ),
             _ => {
                 debug!("Task actor unhandled p2p message type");
                 Ok(response_reply_with_subject(

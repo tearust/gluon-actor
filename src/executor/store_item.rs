@@ -61,12 +61,10 @@ impl TryFrom<crate::p2p_proto::KeyGenerationCandidateRequest> for ExecutorStoreI
     }
 }
 
-impl TryFrom<crate::actor_delegate_proto::SignWithKeySlicesRequest> for ExecutorStoreItem {
+impl TryFrom<crate::p2p_proto::SignCandidateRequest> for ExecutorStoreItem {
     type Error = TeaError;
 
-    fn try_from(
-        value: crate::actor_delegate_proto::SignWithKeySlicesRequest,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(value: crate::p2p_proto::SignCandidateRequest) -> Result<Self, Self::Error> {
         Ok(ExecutorStoreItem {
             task_info: TaskInfo {
                 task_id: value.task_id,

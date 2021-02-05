@@ -1,10 +1,5 @@
-use super::store_item::DelegatorKeyGenStoreItem;
 use crate::common::{send_key_candidate_request, TaskInfo};
-use prost::Message;
-use tea_actor_utility::{
-    action, actor_ipfs::ipfs_swarm_peers, encode_protobuf, layer1::lookup_node_profile_by_tea_id,
-};
-use wascc_actor::HandlerResult;
+use tea_actor_utility::actor_ipfs::ipfs_swarm_peers;
 
 pub fn invite_candidate_initial_pinners(
     task_info: TaskInfo,

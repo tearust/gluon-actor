@@ -8,7 +8,6 @@ use tea_actor_utility::{
     actor_nats::response_reply_with_subject,
     actor_util::{generate_rsa_keypair, rsa_decrypt, rsa_key_to_bytes},
     ipfs_p2p::send_message,
-    layer1::lookup_node_profile_by_tea_id,
 };
 
 pub const PREFIX_SIGN_RSA_KEY: &'static str = "sign_rsa_key";
@@ -61,10 +60,10 @@ pub fn task_sign_with_key_slices_response_handler(
     response_reply_with_subject("", reply_to, "signed successfully".as_bytes().to_vec())
 }
 
-pub fn process_sign_with_key_slices_event(
-    req: crate::actor_delegate_proto::SignWithKeySlicesRequest,
+pub fn process_sign_with_key_slices_handler(
+    peer_id: &str,
+    req: crate::p2p_proto::SignCandidateRequest,
 ) -> anyhow::Result<()> {
-    let delegator_tea_id = req.delegator_tea_id.clone();
     let mut store_item = ExecutorStoreItem::try_from(req)?;
 
     // todo query ExecutionInfo from layer1 and update store item
@@ -86,13 +85,7 @@ pub fn process_sign_with_key_slices_event(
     }
     ExecutorStoreItem::save(&store_item)?;
 
-    let task_info = store_item.task_info.clone();
-    lookup_node_profile_by_tea_id(&delegator_tea_id, "actor.gluon.inbox", move |profile| {
-        send_sign_request(&profile.peer_id, &task_info.task_id)?;
-        Ok(())
-    })
-    .map_err(|e| anyhow::anyhow!("{}", e))?;
-
+    send_sign_request(peer_id, &store_item.task_info.task_id)?;
     store_item.state = StoreItemState::Requested;
     ExecutorStoreItem::save(&store_item)?;
     Ok(())

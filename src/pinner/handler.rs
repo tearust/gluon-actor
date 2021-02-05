@@ -1,3 +1,4 @@
+use crate::executor::ExecutorStoreItem;
 use tea_actor_utility::{
     actor_crypto::aes_decrypt, actor_ipfs::ipfs_block_get, actor_nats::response_reply_with_subject,
     actor_pinner::get_deployment_info, actor_util::rsa_encrypt, ipfs_p2p::send_message,
@@ -8,6 +9,11 @@ pub fn task_sign_with_key_slices_request_handler(
     peer_id: String,
     reply_to: String,
 ) -> anyhow::Result<()> {
+    if ExecutorStoreItem::contains(&req.task_id)? {
+        info!("i have processed executor candidate request already, just ignore this");
+        return Ok(());
+    }
+
     let deployment_id = req.deployment_id.clone();
     get_deployment_info(
         crate::MY_ACTOR_NAME,

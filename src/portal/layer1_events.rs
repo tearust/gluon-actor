@@ -1,7 +1,7 @@
 use crate::delegator::process_key_generation_event;
 use crate::initial_pinner::{trying_commit_data_upload, update_conflict_list};
 use prost::Message;
-use tea_actor_utility::{actor_env::get_my_tea_id, actor_pinner::is_node_ready};
+use tea_actor_utility::actor_pinner::is_node_ready;
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
 
@@ -43,7 +43,6 @@ pub fn sign_with_key_slices_handler(msg: &BrokerMessage) -> HandlerResult<()> {
         );
 
         crate::delegator::process_sign_with_key_slices_event(sign_with_key_slices_request.clone())?;
-        // crate::executor::process_sign_with_key_slices_event(sign_with_key_slices_request)?;
         Ok(())
     })?)
 }
