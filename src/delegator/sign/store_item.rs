@@ -32,16 +32,17 @@ pub struct DelegatorSignStoreItem {
     pub executor: Option<ExecutorInfo>,
     pub multi_sig_account: Vec<u8>,
     pub p1_signature: Vec<u8>,
-    pub adhoc_data: Vec<u8>,
+    pub transaction_data: Vec<u8>,
+    pub nonce: Vec<u8>,
     key_slices: HashMap<String, Option<KeySliceInfo>>,
     deployment_candidates: HashMap<String, Vec<String>>,
 }
 
-impl TryFrom<crate::actor_delegate_proto::SignWithKeySlicesRequest> for DelegatorSignStoreItem {
+impl TryFrom<crate::actor_delegate_proto::SignTransactionResponse> for DelegatorSignStoreItem {
     type Error = TeaError;
 
     fn try_from(
-        value: crate::actor_delegate_proto::SignWithKeySlicesRequest,
+        value: crate::actor_delegate_proto::SignTransactionResponse,
     ) -> Result<Self, Self::Error> {
         Ok(DelegatorSignStoreItem {
             task_info: TaskInfo {
@@ -52,11 +53,12 @@ impl TryFrom<crate::actor_delegate_proto::SignWithKeySlicesRequest> for Delegato
                     task_type: "".to_string(),
                 },
             },
+            nonce: Vec::new(),
             state: StoreItemState::Init,
             executor: None,
             multi_sig_account: value.multi_sig_account,
             p1_signature: value.p1_signature,
-            adhoc_data: value.adhoc_data,
+            transaction_data: value.data_adhoc.transaction_data,
             key_slices: HashMap::new(),
             deployment_candidates: HashMap::new(),
         })

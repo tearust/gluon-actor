@@ -16,31 +16,37 @@ use tea_actor_utility::{action, encode_protobuf};
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 
 pub fn process_sign_with_key_slices_event(
-    req: crate::actor_delegate_proto::SignWithKeySlicesRequest,
+    res: crate::actor_delegate_proto::SignTransactionResponse,
 ) -> anyhow::Result<()> {
-    let mut item = DelegatorSignStoreItem::try_from(req)?;
+    super::verifier::try_to_be_delegator(
+        res.data_adhoc.delegator_tea_nonce_rsa_encryption.clone(),
+        res.data_adhoc.delegator_tea_nonce_hash.clone(),
+        move |nonce| {
+            let mut item = DelegatorSignStoreItem::try_from(res.clone())?;
+            item.nonce = nonce;
+            // todo query p1 public key from layer1 by item.multi_sig_account, and verify item.p1_signature
 
-    // todo query p1 public key from layer1 by item.multi_sig_account, and verify item.p1_signature
+            DelegatorSignStoreItem::save(&item)?;
 
-    DelegatorSignStoreItem::save(&item)?;
+            let properties = ra::generate_pinner_ra_properties(&item.task_info.task_id);
 
-    let properties = ra::generate_pinner_ra_properties(&item.task_info.task_id);
+            // todo query n,k,keyType and deployment ids from layer1 by item.multi_sig_account
+            let n = u8::default();
+            let k = u8::default();
+            let task_type = String::default();
+            let deployment_ids: Vec<String> = Vec::new();
 
-    // todo query n,k,keyType and deployment ids from layer1 by item.multi_sig_account
-    let n = u8::default();
-    let k = u8::default();
-    let task_type = String::default();
-    let deployment_ids: Vec<String> = Vec::new();
+            item.task_info.exec_info = ExecutionInfo { n, k, task_type };
+            item.init_deployment_resources(&deployment_ids);
+            for id in deployment_ids {
+                begin_find_pinners(id, properties.clone())?;
+            }
 
-    item.task_info.exec_info = ExecutionInfo { n, k, task_type };
-    item.init_deployment_resources(&deployment_ids);
-    for id in deployment_ids {
-        begin_find_pinners(id, properties.clone())?;
-    }
-
-    item.state = StoreItemState::FindingDeployments;
-    DelegatorSignStoreItem::save(&item)?;
-    Ok(())
+            item.state = StoreItemState::FindingDeployments;
+            DelegatorSignStoreItem::save(&item)?;
+            Ok(())
+        },
+    )
 }
 
 fn begin_find_pinners(
@@ -165,7 +171,7 @@ fn try_send_to_executor(item: &mut DelegatorSignStoreItem) -> anyhow::Result<()>
             crate::p2p_proto::general_msg::Msg::TaskSignWithKeySlicesResponse(
                 crate::p2p_proto::TaskSignWithKeySlicesResponse {
                     task_id: item.task_info.task_id.clone(),
-                    adhoc_data: item.adhoc_data.clone(),
+                    adhoc_data: item.transaction_data.clone(),
                     p1_signature: item.p1_signature.clone(),
                     key_type: item.task_info.exec_info.task_type.clone(),
                     encrypted_key_slices,

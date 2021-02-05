@@ -66,7 +66,7 @@ pub fn process_key_generation_event(
 }
 
 pub fn process_sign_with_key_slices_event(
-    req: crate::actor_delegate_proto::SignWithKeySlicesRequest,
+    req: crate::actor_delegate_proto::SignTransactionResponse,
 ) -> anyhow::Result<()> {
     super::sign::process_sign_with_key_slices_event(req)
 }

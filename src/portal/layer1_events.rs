@@ -34,7 +34,7 @@ pub fn sign_with_key_slices_handler(msg: &BrokerMessage) -> HandlerResult<()> {
         }
 
         let sign_with_key_slices_request =
-            crate::actor_delegate_proto::SignWithKeySlicesRequest::decode(
+            crate::actor_delegate_proto::SignTransactionResponse::decode(
                 base64_decoded_msg_body.as_slice(),
             )?;
         trace!(
@@ -42,14 +42,8 @@ pub fn sign_with_key_slices_handler(msg: &BrokerMessage) -> HandlerResult<()> {
             &sign_with_key_slices_request,
         );
 
-        let tea_id = get_my_tea_id()?;
-        if tea_id.eq(&sign_with_key_slices_request.delegator_tea_id) {
-            crate::delegator::process_sign_with_key_slices_event(
-                sign_with_key_slices_request.clone(),
-            )?;
-        }
-
-        crate::executor::process_sign_with_key_slices_event(sign_with_key_slices_request)?;
+        crate::delegator::process_sign_with_key_slices_event(sign_with_key_slices_request.clone())?;
+        // crate::executor::process_sign_with_key_slices_event(sign_with_key_slices_request)?;
         Ok(())
     })?)
 }
