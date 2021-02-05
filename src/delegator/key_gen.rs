@@ -1,3 +1,4 @@
+use crate::common::{send_key_candidate_request, utils::invite_candidate_executors};
 use crate::delegator::executor_info::ExecutorInfo;
 use crate::delegator::key_gen::initial_pinner_info::InitialPinnerInfo;
 use std::convert::{TryFrom, TryInto};
@@ -42,11 +43,19 @@ pub fn process_key_generation_event(
             store_item.nonce = nonce;
             DelegatorKeyGenStoreItem::save(&store_item)?;
 
-            candidates::invite_candidate_executors(&store_item, |task_info, peer_ids| {
-                Ok(candidates::invite_candidate_initial_pinners(
-                    task_info, peer_ids,
-                )?)
-            })?;
+            invite_candidate_executors(
+                store_item.task_info.clone(),
+                |task_info, peer_id| {
+                    debug!("begin to invite executor delegate {}", &peer_id);
+                    send_key_candidate_request(&peer_id, task_info, true)?;
+                    Ok(())
+                },
+                |task_info, peer_ids| {
+                    Ok(candidates::invite_candidate_initial_pinners(
+                        task_info, peer_ids,
+                    )?)
+                },
+            )?;
             store_item.state = StoreItemState::InvitedCandidates;
             DelegatorKeyGenStoreItem::save(&store_item)?;
             Ok(())

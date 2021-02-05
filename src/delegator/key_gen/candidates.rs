@@ -6,59 +6,6 @@ use tea_actor_utility::{
 };
 use wascc_actor::HandlerResult;
 
-pub fn invite_candidate_executors<F>(
-    item: &DelegatorKeyGenStoreItem,
-    mut callback: F,
-) -> anyhow::Result<()>
-where
-    F: FnMut(TaskInfo, Vec<String>) -> HandlerResult<()> + Clone + Sync + Send + 'static,
-{
-    let request = crate::actor_delegate_proto::GetDelegatesRequest {
-        start: 0,
-        limit: item.task_info.exec_info.n as u32,
-    };
-
-    let task_info = item.task_info.clone();
-    let content = base64::encode(&encode_protobuf(request)?);
-    debug!("get_delegates request conent: {}", &content);
-    action::call(
-        "layer1.async.reply.get_delegates",
-        "actor.gluon.inbox",
-        content.into(),
-        move |msg| {
-            let base64_decoded_msg_body = base64::decode(String::from_utf8(msg.body.clone())?)?;
-            let get_delegates_res = crate::actor_delegate_proto::GetDelegatesResponse::decode(
-                base64_decoded_msg_body.as_slice(),
-            )?;
-            let candidates_tea_ids: Vec<Vec<u8>> = get_delegates_res
-                .delegates
-                .iter()
-                .map(|v| v.tea_id.clone())
-                .collect();
-
-            for tea_id in candidates_tea_ids {
-                let task_info = task_info.clone();
-                lookup_node_profile_by_tea_id(&tea_id, "actor.gluon.inbox", move |profile| {
-                    debug!("begin to invite executor delegate {}", &profile.peer_id);
-                    send_key_candidate_request(&profile.peer_id, task_info.clone(), true)?;
-                    Ok(())
-                })
-                .map_err(|e| anyhow::anyhow!("{}", e))?;
-            }
-
-            let task_info = task_info.clone();
-            let peer_ids: Vec<String> = get_delegates_res
-                .delegates
-                .iter()
-                .map(|v| v.peer_id.clone())
-                .collect();
-            debug!("get_delegates got response with peer_ids: {:?}", &peer_ids);
-            callback(task_info, peer_ids)
-        },
-    )
-    .map_err(|e| anyhow::anyhow!("{}", e))
-}
-
 pub fn invite_candidate_initial_pinners(
     task_info: TaskInfo,
     filter_ids: Vec<String>,
