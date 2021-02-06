@@ -1,19 +1,25 @@
-use std::convert::TryFrom;
+use crate::common::{
+    utils::{from_hash_map, invite_candidate_executors},
+    ExecutionInfo,
+};
+use crate::delegator::sign::store_item::KeySliceInfo;
+use prost::Message;
+use std::{collections::HashMap, convert::TryFrom};
 use store_item::{DelegatorSignStoreItem, StoreItemState};
-use tea_actor_utility::actor_nats::response_reply_with_subject;
+use tea_actor_utility::{
+    action,
+    actor_nats::response_reply_with_subject,
+    encode_protobuf,
+    ipfs_p2p::{response_ipfs_p2p, send_message, P2pReplyType},
+};
+use wascc_actor::prelude::codec::messaging::BrokerMessage;
+use wascc_actor::HandlerResult;
 
 mod observers;
 mod ra;
 mod store_item;
 
-use crate::common::utils::{from_hash_map, invite_candidate_executors};
-use crate::common::ExecutionInfo;
-use crate::delegator::sign::store_item::KeySliceInfo;
 pub use observers::{is_sign_tag, operation_after_verify_handler};
-use std::collections::HashMap;
-use tea_actor_utility::ipfs_p2p::{response_ipfs_p2p, send_message, P2pReplyType};
-use tea_actor_utility::{action, encode_protobuf};
-use wascc_actor::prelude::codec::messaging::BrokerMessage;
 
 pub fn process_sign_with_key_slices_event(
     res: crate::actor_delegate_proto::SignTransactionResponse,
@@ -22,51 +28,79 @@ pub fn process_sign_with_key_slices_event(
         res.data_adhoc.delegator_tea_nonce_rsa_encryption.clone(),
         res.data_adhoc.delegator_tea_nonce_hash.clone(),
         move |nonce| {
-            let mut item = DelegatorSignStoreItem::try_from(res.clone())?;
-            item.nonce = nonce;
-            // todo query p1 public key from layer1 by item.multi_sig_account, and verify item.p1_signature
+            let res = res.clone();
+            get_deployment_ids(res.multi_sig_account.clone(), move |deployment_ids| {
+                let mut item = DelegatorSignStoreItem::try_from(res.clone())?;
+                item.nonce = nonce.clone();
+                // todo query p1 public key from layer1 by item.multi_sig_account, and verify item.p1_signature
+                // todo query n,k,keyType and deployment ids from layer1 by item.multi_sig_account
+                let n = 2;
+                let k = 1;
+                let task_type = "bitcoin_mainnet".to_string();
 
-            let properties = ra::generate_pinner_ra_properties(&item.task_info.task_id);
+                let properties = ra::generate_pinner_ra_properties(&item.task_info.task_id);
+                item.task_info.exec_info = ExecutionInfo { n, k, task_type };
+                item.init_deployment_resources(&deployment_ids);
+                item.state = StoreItemState::Initialized;
+                DelegatorSignStoreItem::save(&item)?;
 
-            // todo query n,k,keyType and deployment ids from layer1 by item.multi_sig_account
-            let n = u8::default();
-            let k = u8::default();
-            let task_type = String::default();
-            let deployment_ids: Vec<String> = Vec::new();
+                invite_candidate_executors(
+                    item.task_info.clone(),
+                    move |task_info, peer_id| {
+                        send_message(
+                            &peer_id,
+                            &task_info.task_id,
+                            crate::p2p_proto::GeneralMsg {
+                                msg: Some(
+                                    crate::p2p_proto::general_msg::Msg::SignCandidateRequest(
+                                        crate::p2p_proto::SignCandidateRequest {
+                                            task_id: task_info.task_id.clone(),
+                                            multi_sig_account: item.multi_sig_account.clone(),
+                                        },
+                                    ),
+                                ),
+                            },
+                        )
+                    },
+                    move |task_info, _| {
+                        for id in deployment_ids.iter() {
+                            begin_find_pinners(id.to_string(), properties.clone())?;
+                        }
 
-            item.task_info.exec_info = ExecutionInfo { n, k, task_type };
-            item.init_deployment_resources(&deployment_ids);
-            item.state = StoreItemState::Initialized;
-            DelegatorSignStoreItem::save(&item)?;
-
-            invite_candidate_executors(
-                item.task_info.clone(),
-                move |task_info, peer_id| {
-                    send_message(
-                        &peer_id,
-                        &task_info.task_id,
-                        crate::p2p_proto::GeneralMsg {
-                            msg: Some(crate::p2p_proto::general_msg::Msg::SignCandidateRequest(
-                                crate::p2p_proto::SignCandidateRequest {
-                                    task_id: task_info.task_id.clone(),
-                                    multi_sig_account: item.multi_sig_account.clone(),
-                                },
-                            )),
-                        },
-                    )
-                },
-                move |task_info, _| {
-                    for id in deployment_ids.iter() {
-                        begin_find_pinners(id.to_string(), properties.clone())?;
-                    }
-
-                    let mut item = DelegatorSignStoreItem::get(&task_info.task_id)?;
-                    item.state = StoreItemState::FindingDeployments;
-                    DelegatorSignStoreItem::save(&item)?;
-                    Ok(())
-                },
-            )?;
+                        let mut item = DelegatorSignStoreItem::get(&task_info.task_id)?;
+                        item.state = StoreItemState::FindingDeployments;
+                        DelegatorSignStoreItem::save(&item)?;
+                        Ok(())
+                    },
+                )
+            })?;
             Ok(())
+        },
+    )
+}
+
+fn get_deployment_ids<F>(multi_sig_account: Vec<u8>, mut callback: F) -> HandlerResult<()>
+where
+    F: FnMut(Vec<String>) -> anyhow::Result<()> + Send + Sync + 'static,
+{
+    let content = base64::encode(&encode_protobuf(
+        crate::actor_delegate_proto::GetDeploymentIds { multi_sig_account },
+    )?);
+    action::call(
+        "layer1.async.reply.get_deployment_ids",
+        "actor.gluon.inbox",
+        content.into(),
+        move |msg| {
+            let base64_decoded_msg_body = base64::decode(String::from_utf8(msg.body.clone())?)?;
+            let get_deployments_res =
+                crate::actor_delegate_proto::GetDeploymentIdsResponse::decode(
+                    base64_decoded_msg_body.as_slice(),
+                )?;
+            debug!(
+                "request for get_deployment_ids from layer1 got response: {:?}",
+                &get_deployments_res
+            );
+            Ok(callback(get_deployments_res.asset_info.p2_deployment_ids)?)
         },
     )
 }
