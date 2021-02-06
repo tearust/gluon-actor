@@ -48,8 +48,10 @@ fn handle_message(msg: BrokerMessage) -> HandlerResult<()> {
             pinner_server_check_strategy(&msg)
         }
 
-        ["layer1", "event", _, "KeyGenerationRequested"] => key_generation_request_handler(&msg),
-        ["layer1", "event", _, "SignWithKeySlicesRequested"] => sign_with_key_slices_handler(&msg),
+        ["layer1", "event", _, "AccountGenerationRequested"] => {
+            key_generation_request_handler(&msg)
+        }
+        ["layer1", "event", _, "SignTransactionRequested"] => sign_with_key_slices_handler(&msg),
         ["layer1", "event", _, "AssetGenerated"] => asset_generated_event_handler(&msg),
         ["actor", MY_ACTOR_NAME, "inbox", uuid] => action::result_handler(&msg, uuid),
         ["reply", MY_ACTOR_NAME, uuid] => action::result_handler(&msg, uuid),
