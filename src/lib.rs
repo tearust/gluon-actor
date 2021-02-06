@@ -185,7 +185,7 @@ fn listen_p2p_message(from_peer_id: &str, msg: &BrokerMessage) -> HandlerResult<
                 executor::process_sign_with_key_slices_handler(from_peer_id, req)?,
             ),
             _ => {
-                debug!("Task actor unhandled p2p message type");
+                trace!("Gluon actor unhandled p2p message type {:?}", &g_msg);
                 Ok(response_reply_with_subject(
                     "",
                     &reply_to,
