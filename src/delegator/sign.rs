@@ -221,6 +221,7 @@ fn try_send_to_executor(item: &mut DelegatorSignStoreItem) -> anyhow::Result<()>
         return Ok(());
     }
 
+    debug!("ready to send sign task to executor, task id: {}", &item.task_info.task_id);
     let encrypted_key_slices = item.get_encrypted_key_slices();
     let res = crate::p2p_proto::GeneralMsg {
         msg: Some(

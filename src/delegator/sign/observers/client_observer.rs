@@ -68,6 +68,8 @@ fn on_executor_ra_success(
     peer_id: &str,
     rsa_pub_key: Vec<u8>,
 ) -> anyhow::Result<()> {
+    debug!("got sign executor ra success response, task id: {}, peer id: {}", task_id, peer_id);
+
     let mut store_item = DelegatorSignStoreItem::get(task_id)?;
     if store_item.executor.is_some() {
         info!("executor already exists, just ignore");
@@ -94,6 +96,8 @@ fn on_executor_ra_success(
 }
 
 fn on_pinner_ra_success(task_id: &str, peer_id: &str, deployment_id: &str) -> anyhow::Result<()> {
+    debug!("go sign pinner ra success response, task id: {}, peer id: {}", task_id, peer_id);
+
     let mut store_item = DelegatorSignStoreItem::get(task_id)?;
     if store_item.has_found_key_slice(deployment_id) {
         info!(
@@ -120,6 +124,7 @@ fn send_get_pinner_key_slice_request(
     deployment_id: &str,
     item: &DelegatorSignStoreItem,
 ) -> anyhow::Result<()> {
+    debug!("begin to send get pinner key slice request to {}, task id is: {}", peer_id, task_id);
     let req = crate::p2p_proto::GeneralMsg {
         msg: Some(
             crate::p2p_proto::general_msg::Msg::TaskSignGetPinnerKeySliceRequest(
