@@ -20,6 +20,7 @@ mod ra;
 mod store_item;
 
 pub use observers::{is_sign_tag, operation_after_verify_handler};
+use tea_actor_utility::ipfs_p2p::close_p2p;
 
 pub fn process_sign_with_key_slices_event(
     res: crate::actor_delegate_proto::SignTransactionResponse,
@@ -173,8 +174,8 @@ pub fn process_executor_sign_with_key_slices_request(
 
 pub fn process_commit_sign_result_request(
     req: crate::p2p_proto::TaskCommitSignResultRequest,
-    _peer_id: &str,
-    reply_to: &str,
+    peer_id: &str,
+    _reply_to: &str,
 ) -> anyhow::Result<()> {
     debug!("process_commit_sign_result_request req: {:?}", &req);
     let mut item = DelegatorSignStoreItem::get(&req.task_id)?;
@@ -190,11 +191,8 @@ pub fn process_commit_sign_result_request(
 
     info!("commit sign task successfully");
 
-    response_reply_with_subject(
-        "",
-        reply_to,
-        "commit signature successfully".as_bytes().to_vec(),
-    )
+    close_p2p(peer_id).map_err(|e| anyhow::anyhow!("{}", e))?;
+    Ok(())
 }
 
 pub fn process_pinner_key_slice_response(
@@ -223,13 +221,7 @@ pub fn process_pinner_key_slice_response(
     )?;
     DelegatorSignStoreItem::save(&item)?;
 
-    response_reply_with_subject(
-        "",
-        reply_to,
-        format!("become pinner of {} successfully", &deployment_id)
-            .as_bytes()
-            .to_vec(),
-    )?;
+    close_p2p(peer_id).map_err(|e| anyhow::anyhow!("{}", e))?;
     try_send_to_executor(&mut item)
 }
 
