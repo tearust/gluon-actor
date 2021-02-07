@@ -79,6 +79,17 @@ pub fn process_sign_with_key_slices_event(
     )
 }
 
+#[cfg(feature = "dev")]
+fn get_deployment_ids<F>(_multi_sig_account: Vec<u8>, mut callback: F) -> HandlerResult<()>
+where
+    F: FnMut(Vec<String>) -> anyhow::Result<()> + Send + Sync + 'static,
+{
+    let deployment_ids = super::dump_methods::get_deployment_ids()?;
+    debug!("get mocked deployment_ids: {:?}", &deployment_ids);
+    Ok(callback(deployment_ids)?)
+}
+
+#[cfg(not(feature = "dev"))]
 fn get_deployment_ids<F>(multi_sig_account: Vec<u8>, mut callback: F) -> HandlerResult<()>
 where
     F: FnMut(Vec<String>) -> anyhow::Result<()> + Send + Sync + 'static,

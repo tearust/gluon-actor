@@ -1,16 +1,26 @@
 #![cfg(feature = "dev")]
 
-use crate::{MY_ACTOR_NAME, PINNER_ACTOR_NAME};
+use crate::{BINDING_NAME, MY_ACTOR_NAME, PINNER_ACTOR_NAME};
 use tea_actor_utility::{
     action,
     action::get_uuid,
     actor_crypto::{generate, sha256, sign},
+    actor_kvp,
     actor_nats::response_reply_to,
     actor_util::rsa_encrypt,
     encode_protobuf,
 };
 use wascc_actor::prelude::codec::messaging::BrokerMessage;
 use wascc_actor::HandlerResult;
+
+const DEPLOYMENT_IDS_KEY: &str = "predefined deployments ids";
+
+pub fn get_deployment_ids() -> anyhow::Result<Vec<String>> {
+    Ok(
+        actor_kvp::get::<Vec<String>>(BINDING_NAME, DEPLOYMENT_IDS_KEY)?
+            .ok_or(anyhow::anyhow!("can not find dumped deployment ids"))?,
+    )
+}
 
 pub fn generate_sign_response_message(msg: &BrokerMessage) -> HandlerResult<()> {
     let message = String::from_utf8(msg.body.clone())?;
@@ -22,9 +32,15 @@ pub fn generate_sign_response_message(msg: &BrokerMessage) -> HandlerResult<()> 
     let key_type = params[0].to_string();
     let multi_sig_account = params[1].as_bytes().to_vec();
     let reply_to = msg.reply_to.clone();
+
+    let mut deployment_ids: Vec<String> = Vec::new();
+    for i in 2..params.len() {
+        deployment_ids.push(params[i].to_string());
+    }
+    actor_kvp::set(BINDING_NAME, DEPLOYMENT_IDS_KEY, &deployment_ids, 6000);
     debug!(
-        "generate_key_gen_response_message with key type: {}, multi_sig_account: {}",
-        &params[0], &params[1]
+        "generate_key_gen_response_message with key type: {}, multi_sig_account: {}, deployment_ids: {:?}",
+        &params[0], &params[1], &deployment_ids
     );
 
     delegator_key_operation(
