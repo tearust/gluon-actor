@@ -37,7 +37,7 @@ pub fn generate_sign_response_message(msg: &BrokerMessage) -> HandlerResult<()> 
     for i in 2..params.len() {
         deployment_ids.push(params[i].to_string());
     }
-    actor_kvp::set(BINDING_NAME, DEPLOYMENT_IDS_KEY, &deployment_ids, 6000);
+    actor_kvp::set(BINDING_NAME, DEPLOYMENT_IDS_KEY, &deployment_ids, 6000)?;
     debug!(
         "generate_key_gen_response_message with key type: {}, multi_sig_account: {}, deployment_ids: {:?}",
         &params[0], &params[1], &deployment_ids

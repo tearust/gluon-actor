@@ -173,6 +173,7 @@ pub fn process_commit_sign_result_request(
     _peer_id: &str,
     reply_to: &str,
 ) -> anyhow::Result<()> {
+    debug!("process_commit_sign_result_request req: {:?}", &req);
     let mut item = DelegatorSignStoreItem::get(&req.task_id)?;
 
     // todo verify signature using item.multi_sig_account
@@ -183,6 +184,8 @@ pub fn process_commit_sign_result_request(
 
     item.state = StoreItemState::CommitResult;
     DelegatorSignStoreItem::save(&item)?;
+
+    info!("commit sign task successfully");
 
     response_reply_with_subject(
         "",

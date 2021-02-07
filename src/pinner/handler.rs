@@ -9,11 +9,6 @@ pub fn task_sign_with_key_slices_request_handler(
     peer_id: String,
     reply_to: String,
 ) -> anyhow::Result<()> {
-    if ExecutorStoreItem::contains(&req.task_id)? {
-        info!("i have processed executor candidate request already, just ignore this");
-        return Ok(());
-    }
-
     let deployment_id = req.deployment_id.clone();
     get_deployment_info(
         crate::MY_ACTOR_NAME,
