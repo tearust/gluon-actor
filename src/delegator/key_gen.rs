@@ -18,6 +18,8 @@ mod store_item;
 
 pub use observers::{is_key_gen_tag, operation_after_verify_handler};
 pub use ra::{remote_attestation_executor, remote_attestation_initial_pinner};
+use tea_actor_utility::ipfs_p2p::close_p2p;
+use wascc_actor::HandlerResult;
 
 pub trait TaskCandidates {
     fn ready(&self) -> bool;
@@ -168,20 +170,14 @@ pub fn process_task_pinner_key_slice_response(
             let result: crate::actor_delegate_proto::UpdateKeyGenerationResult =
                 item.clone().try_into()?;
             let reply_to = reply_to.to_string();
+            let task_id = item.task_info.task_id.clone();
             action::call(
                 "layer1.async.reply.update_generate_key_result",
                 "actor.gluon.inbox",
                 base64::encode(&encode_protobuf(result)?).into(),
                 move |msg| {
                     debug!("update_generate_key_result got response: {:?}", msg);
-                    response_reply_with_subject(
-                        "",
-                        &reply_to,
-                        "received initial pinner key slice response"
-                            .as_bytes()
-                            .to_vec(),
-                    )?;
-                    Ok(())
+                    close_p2p_connections(&task_id)
                 },
             )
             .map_err(|e| anyhow::anyhow!("{}", e))
@@ -196,6 +192,17 @@ pub fn process_task_pinner_key_slice_response(
             )
         }
     })
+}
+
+fn close_p2p_connections(task_id: &str) -> HandlerResult<()> {
+    let item = DelegatorKeyGenStoreItem::get(task_id)?;
+    for pinner in item.initial_pinners.iter() {
+        close_p2p(&pinner.peer_id)?;
+    }
+    if let Some(executor) = item.executor {
+        close_p2p(&executor.peer_id);
+    }
+    Ok(())
 }
 
 fn delegator_store_item_handler<T>(
