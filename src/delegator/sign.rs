@@ -56,6 +56,9 @@ pub fn process_sign_with_key_slices_event(
                                         crate::p2p_proto::SignCandidateRequest {
                                             task_id: task_info.task_id.clone(),
                                             multi_sig_account: item.multi_sig_account.clone(),
+                                            n: task_info.exec_info.n as u32,
+                                            k: task_info.exec_info.k as u32,
+                                            task_type: task_info.exec_info.task_type.clone(),
                                         },
                                     ),
                                 ),
@@ -235,7 +238,10 @@ fn try_send_to_executor(item: &mut DelegatorSignStoreItem) -> anyhow::Result<()>
         return Ok(());
     }
 
-    debug!("ready to send sign task to executor, task id: {}", &item.task_info.task_id);
+    debug!(
+        "ready to send sign task to executor, task id: {}",
+        &item.task_info.task_id
+    );
     let encrypted_key_slices = item.get_encrypted_key_slices();
     let res = crate::p2p_proto::GeneralMsg {
         msg: Some(

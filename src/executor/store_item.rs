@@ -1,4 +1,4 @@
-use crate::common::{ExecutionInfo, TaskInfo};
+use crate::common::TaskInfo;
 use crate::BINDING_NAME;
 use serde::export::TryFrom;
 use tea_actor_utility::actor_kvp;
@@ -66,10 +66,7 @@ impl TryFrom<crate::p2p_proto::SignCandidateRequest> for ExecutorStoreItem {
 
     fn try_from(value: crate::p2p_proto::SignCandidateRequest) -> Result<Self, Self::Error> {
         Ok(ExecutorStoreItem {
-            task_info: TaskInfo {
-                task_id: value.task_id,
-                exec_info: ExecutionInfo::default(),
-            },
+            task_info: TaskInfo::from(value),
             state: StoreItemState::Init,
         })
     }

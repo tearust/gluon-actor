@@ -26,6 +26,19 @@ impl TryFrom<crate::p2p_proto::KeyGenerationCandidateRequest> for TaskInfo {
     }
 }
 
+impl From<crate::p2p_proto::SignCandidateRequest> for TaskInfo {
+    fn from(value: crate::p2p_proto::SignCandidateRequest) -> Self {
+        TaskInfo {
+            task_id: value.task_id,
+            exec_info: ExecutionInfo {
+                n: value.n as u8,
+                k: value.k as u8,
+                task_type: value.task_type,
+            },
+        }
+    }
+}
+
 impl TryFrom<crate::actor_delegate_proto::KeyGenerationResponse> for TaskInfo {
     type Error = anyhow::Error;
 

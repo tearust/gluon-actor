@@ -17,7 +17,10 @@ pub fn task_sign_with_key_slices_response_handler(
     peer_id: &str,
     reply_to: &str,
 ) -> anyhow::Result<()> {
-    debug!("task_sign_with_key_slices_response_handler req: {:?}", &request);
+    debug!(
+        "task_sign_with_key_slices_response_handler req: {:?}",
+        &request
+    );
     let task_id = request.task_id.clone();
     let mut item = ExecutorStoreItem::get(&task_id)?;
     item.state = StoreItemState::Responded;
@@ -33,7 +36,10 @@ pub fn task_sign_with_key_slices_response_handler(
 
     let p2_signature: Vec<u8> =
         actor_crypto::sign(request.key_type, p2_private_key, request.adhoc_data)?;
-    debug!("recover and sign with p2 successfully");
+    debug!(
+        "recover and sign with p2 successfully, p2_signature: {}",
+        &p2_signature
+    );
 
     // todo query p1, p2, p3 from layer1
     let public_keys: Vec<Vec<u8>> = vec![];
