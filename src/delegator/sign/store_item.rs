@@ -47,7 +47,7 @@ impl TryFrom<crate::actor_delegate_proto::SignTransactionResponse> for Delegator
     ) -> Result<Self, Self::Error> {
         Ok(DelegatorSignStoreItem {
             task_info: TaskInfo {
-                task_id: value.task_id,
+                task_id: base64::encode(&value.task_id),
                 exec_info: ExecutionInfo {
                     n: 0,
                     k: 0,

@@ -88,13 +88,13 @@ impl TryFrom<crate::actor_delegate_proto::KeyGenerationResponse> for DelegatorKe
 }
 
 impl TryInto<crate::actor_delegate_proto::UpdateKeyGenerationResult> for DelegatorKeyGenStoreItem {
-    type Error = TeaError;
+    type Error = anyhow::Error;
 
     fn try_into(
         self,
     ) -> Result<crate::actor_delegate_proto::UpdateKeyGenerationResult, Self::Error> {
         Ok(crate::actor_delegate_proto::UpdateKeyGenerationResult {
-            task_id: self.task_info.task_id,
+            task_id: base64::decode(self.task_info.task_id)?,
             delegator_nonce: self.nonce,
             multi_sig_account: self
                 .multi_sig_account

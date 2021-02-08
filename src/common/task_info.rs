@@ -46,7 +46,7 @@ impl TryFrom<crate::actor_delegate_proto::KeyGenerationResponse> for TaskInfo {
         value: crate::actor_delegate_proto::KeyGenerationResponse,
     ) -> Result<Self, Self::Error> {
         let info = TaskInfo {
-            task_id: value.task_id,
+            task_id: base64::encode(&value.task_id),
             exec_info: ExecutionInfo {
                 n: value.data_adhoc.n as u8,
                 k: value.data_adhoc.k as u8,

@@ -50,7 +50,7 @@ pub fn generate_sign_response_message(msg: &BrokerMessage) -> HandlerResult<()> 
             let (_, p1_priv_key) = generate(key_type.clone())?;
             let p1_signature = sign(key_type.clone(), p1_priv_key, transaction_data.clone())?;
             let res = crate::actor_delegate_proto::SignTransactionResponse {
-                task_id: get_uuid(),
+                task_id: get_uuid().as_bytes().to_vec(),
                 data_adhoc: crate::actor_delegate_proto::SignTransactionData {
                     transaction_data,
                     delegator_tea_nonce_hash,
@@ -79,7 +79,7 @@ pub fn generate_key_gen_response_message(msg: &BrokerMessage) -> HandlerResult<(
         move |delegator_tea_nonce_hash, delegator_tea_nonce_rsa_encryption| {
             let (p1_public_key, _) = generate(key_type.clone())?;
             let res = crate::actor_delegate_proto::KeyGenerationResponse {
-                task_id: get_uuid(),
+                task_id: get_uuid().as_bytes().to_vec(),
                 data_adhoc: crate::actor_delegate_proto::KeyGenerationData {
                     n: 2,
                     k: 1,
