@@ -15,11 +15,8 @@ use wascc_actor::HandlerResult;
 
 const DEPLOYMENT_IDS_KEY: &str = "predefined deployments ids";
 
-pub fn get_deployment_ids() -> anyhow::Result<Vec<String>> {
-    Ok(
-        actor_kvp::get::<Vec<String>>(BINDING_NAME, DEPLOYMENT_IDS_KEY)?
-            .ok_or(anyhow::anyhow!("can not find dumped deployment ids"))?,
-    )
+pub fn get_deployment_ids() -> anyhow::Result<Option<Vec<String>>> {
+    actor_kvp::get::<Vec<String>>(BINDING_NAME, DEPLOYMENT_IDS_KEY)
 }
 
 pub fn generate_sign_response_message(msg: &BrokerMessage) -> HandlerResult<()> {
